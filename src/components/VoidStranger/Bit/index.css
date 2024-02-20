@@ -1,0 +1,7 @@
+.void-stranger-bit {
+    background-color: #808080;
+}
+
+.void-stranger-bit.void-stranger-bit-on {
+    background-color: #ffffff;
+}

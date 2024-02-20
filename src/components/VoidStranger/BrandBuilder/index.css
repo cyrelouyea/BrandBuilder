@@ -1,0 +1,17 @@
+.preview-letter {
+    opacity: 0.25;
+}
+
+.preview-empty {
+    background-color: #808080;
+}
+
+.brand {
+    height: 100%;
+    width: 100%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    image-rendering: pixelated;
+    background-position: center;
+    position: relative;
+}
