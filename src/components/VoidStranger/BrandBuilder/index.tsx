@@ -9,6 +9,9 @@ import emptyBrandImg from "../../../assets/emptybrand.png";
 // CSS files
 import "./index.css";
 
+const BRAND_IMAGE_WIDTH = 132;
+const BRAND_IMAGE_HEIGHT = 100;
+
 export interface LetterBlockProps {
   type: "letter"
   id: number
@@ -144,18 +147,20 @@ export const BrandBuilder: Component = () => {
     .map(value => fromVoidStrangerLetter(value));
 
   onMount(() => {
+    function resize(element: Element) {
+      const rect = makeRect(BRAND_IMAGE_WIDTH, BRAND_IMAGE_HEIGHT, element.getBoundingClientRect().width, element.getBoundingClientRect().height);
+      setPixelOffset({ left: rect.left, top: rect.top });
+      setPixelScale(rect.height / BRAND_IMAGE_HEIGHT);
+    }
+
     resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
-        const rect = makeRect(132.0, 100.0, entry.target.getBoundingClientRect().width, entry.target.getBoundingClientRect().height);
-        setPixelOffset({ left: rect.left, top: rect.top });
-        setPixelScale(rect.height / 100.0);
+        resize(entry.target);
       }
     });
 
     if (brandRef) {
-      const rect = makeRect(132.0, 100.0, brandRef.getBoundingClientRect().width, brandRef.getBoundingClientRect().height);
-      setPixelOffset({ left: rect.left, top: rect.top });
-      setPixelScale(rect.height / 100.0);
+      resize(brandRef);
       resizeObserver.observe(brandRef);
     }
   });
@@ -165,6 +170,8 @@ export const BrandBuilder: Component = () => {
   });
 
   const genSize = (size: number) => (pixelScale() * size); 
+  const topSize = (x: number) => pixelOffset().top + genSize(26 + x * 8);
+  const leftSize = (y: number) => (pixelOffset().left + genSize(42 + (5 - y) * 8 ));
 
   return (
     <div style={{display: "flex", "flex-direction": "column", height: "100%"}}>
@@ -182,7 +189,7 @@ export const BrandBuilder: Component = () => {
             <Index each={chunksOfBlocks()}>
               {(chunkOfBlocks, y) => 
                 <Index each={chunkOfBlocks()}>
-                  {(block, x) => <div style={{position: "absolute", top: (pixelOffset().top + genSize(26 + x * 8)) + "px", left: (pixelOffset().left + genSize(42 + (5 - y) * 8 )) + "px"}}>
+                  {(block, x) => <div style={{position: "absolute", top: topSize(x) + "px", left: leftSize(y) + "px"}}>
                     <CommonBlock {...block()} pixelScale={pixelScale()}  />
                   </div>} 
                 </Index>
