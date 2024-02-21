@@ -1,7 +1,9 @@
 import { DragDropProvider, DragDropSensors, DragEventHandler, DragOverlay, closestCenter, createDraggable, createDroppable } from "@thisbeyond/solid-dnd";
-import { Component, Match, Show, createSignal, Switch, onCleanup, onMount, Index } from "solid-js";
+import { Component, Match, Show, createSignal, Switch, onCleanup, onMount, Index, createEffect, createMemo, For } from "solid-js";
 import { Letter } from "../Letter";
-import { chunks, fromVoidStrangerLetter, isOrdered, toVoidStrangerLetter } from "../../../utils";
+import { chunks, isOrdered, toVoidStrangerLetter } from "../../../utils";
+import { useSearchParams } from "@solidjs/router";
+import { BRANDS } from "../../brands";
 
 // Asset files
 import emptyBrandImg from "../../../assets/emptybrand.png";
@@ -85,30 +87,29 @@ function makeRect(originalWidth: number, originalHeight: number, targetWidth: nu
     height
   };
 }
-
 export const BrandBuilder: Component = () => {
 
   let resizeObserver: ResizeObserver | undefined;
   let brandRef: HTMLDivElement | undefined;
 
-  const [text, setText] = createSignal("");
+  const [params] = useSearchParams<{ q: string }>();
   const [blocks, setBlocks] = createSignal<BlockProps[]>([]);
   const [activeBlock, setActiveBlock] = createSignal<LetterBlockProps>();
   const [pixelScale, setPixelScale] = createSignal<number>(0);
   const [pixelOffset, setPixelOffset] = createSignal<{ left:number, top: number }>({ left: 0, top: 0});
 
-  const applyText = () => {
-    const bl: LetterBlockProps[] = text()
+  createEffect(() => {
+    const bl: LetterBlockProps[] = (params.q ?? "")
       .split("")
       .map((element) => toVoidStrangerLetter(element.toUpperCase()))
       .filter((element): element is number => element !== null)
       .map((element, index) => ({ type: "letter", value: element, id: index + 1, pixelScale: 0 }));
 
-    
+  
     const remainings: EmptyBlockProps[] = Array.from({ length: 6 * 6 - bl.length }, (_, k) => ({ type: "empty", id: bl.length + k + 1, pixelScale: 0 }));
 
     setBlocks([...bl, ...remainings]);
-  };
+  });
   
   const onDragStart: DragEventHandler = ({ draggable }) => {
     const block = blocks().find(el => el.id === draggable.id);
@@ -139,12 +140,6 @@ export const BrandBuilder: Component = () => {
     setActiveBlock(undefined);
   };
 
-  const chunksOfBlocks = () => chunks(blocks(), 6);
-
-  const displayedSentence = () => blocks()
-    .filter((block): block is LetterBlockProps => block.type === "letter")
-    .map(block => block.value)
-    .map(value => fromVoidStrangerLetter(value));
 
   onMount(() => {
     function resize(element: Element) {
@@ -171,21 +166,21 @@ export const BrandBuilder: Component = () => {
 
   const genSize = (size: number) => (pixelScale() * size); 
   const topSize = (x: number) => pixelOffset().top + genSize(26 + x * 8);
-  const leftSize = (y: number) => (pixelOffset().left + genSize(42 + (5 - y) * 8 ));
+  const leftSize = (y: number) => pixelOffset().left + genSize(42 + (5 - y) * 8);
+  const chunksOfBlocks = () => chunks(blocks(), 6);
 
   return (
     <div style={{display: "flex", "flex-direction": "column", height: "100%"}}>
-      <div style={{"flex-shrink": 1}}>
-        <input type="text" value={text()} onInput={(ev) => setText(ev.target.value)} />
-        <button onClick={applyText}>Apply</button>
-      </div>
-      <div style={{"flex-shrink": 1}}>
-        <p><b>Displayed sentence</b>: {displayedSentence()}</p>
-      </div>
-      <div style={{"flex-grow": 1,}}>
-        <div ref={brandRef} style={{"background-image": `url(${emptyBrandImg})`}} class="brand">
-          <DragDropProvider collisionDetector={closestCenter} onDragEnd={onDragEnd} onDragStart={onDragStart}>
-            <DragDropSensors />
+      <div style={{"flex-grow": 1}}>
+        <DragDropProvider collisionDetector={closestCenter} onDragEnd={onDragEnd} onDragStart={onDragStart}>
+          <DragDropSensors />
+          <div ref={brandRef} class="brand" style={{"background-image": `url(${emptyBrandImg})`}}>
+            <For each={BRANDS}>{brand => <div class="brand" style={{
+              "position": "absolute", 
+              "background-image": `url(${brand.url})`, 
+              "opacity": brand.pattern === blocks().map(block => block.type === "empty" ? "0" : "1").join("") ? 1 : 0 }} 
+            />}
+            </For>
             <Index each={chunksOfBlocks()}>
               {(chunkOfBlocks, y) => 
                 <Index each={chunkOfBlocks()}>
@@ -195,13 +190,13 @@ export const BrandBuilder: Component = () => {
                 </Index>
               }
             </Index>
-            <DragOverlay>
-              <Show when={activeBlock()}>
-                {(block) => <Letter value={block().value} pixelScale={pixelScale()} />}
-              </Show>
-            </DragOverlay>
-          </DragDropProvider>
-        </div>
+          </div>
+          <DragOverlay>
+            <Show when={activeBlock()}>
+              {(block) => <Letter value={block().value} pixelScale={pixelScale()} />}
+            </Show>
+          </DragOverlay>
+        </DragDropProvider>
       </div>
     </div>
   );
