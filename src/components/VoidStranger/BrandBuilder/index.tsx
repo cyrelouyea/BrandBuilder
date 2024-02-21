@@ -1,5 +1,5 @@
 import { DragDropProvider, DragDropSensors, DragEventHandler, DragOverlay, closestCenter, createDraggable, createDroppable } from "@thisbeyond/solid-dnd";
-import { Component, Match, Show, createSignal, Switch, onCleanup, onMount, Index, createEffect, createMemo, For } from "solid-js";
+import { Component, Match, Show, createSignal, Switch, onCleanup, onMount, Index, createEffect, For } from "solid-js";
 import { Letter } from "../Letter";
 import { chunks, isOrdered, toVoidStrangerLetter } from "../../../utils";
 import { useSearchParams } from "@solidjs/router";

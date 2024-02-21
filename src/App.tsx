@@ -8,7 +8,7 @@ import { BrandBuilder } from "./components/VoidStranger/BrandBuilder";
 const App: Component = () => {
 
   return <Router>
-    <Route path="/brand-builder" component={BrandBuilder} />
+    <Route path="/" component={BrandBuilder} />
   </Router>;
 };
 
