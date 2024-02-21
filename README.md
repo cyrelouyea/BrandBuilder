@@ -1,34 +1,30 @@
-## Usage
+# Brand Builder
 
-Those templates dependencies are maintained via [pnpm](https://pnpm.io) via `pnpm up -Lri`.
+Build your own brand
 
-This is the reason you see a `pnpm-lock.yaml`. That being said, any package manager will work. This file can be safely be removed once you clone a template.
+## How to build a brand
 
-```bash
-$ npm install # or pnpm install or yarn install
+Use the `q` search parameters to enter the sentence you want. 
+Only characters from A to Z (lowercase or uppercase) will be included.
+
+For example:
+```
+https://brandbuilder.aleryc.fr/?q=only%20a%20memory%20remains
 ```
 
-### Learn more on the [Solid Website](https://solidjs.com) and come chat with us on our [Discord](https://discord.com/invite/solidjs)
+In the page, you can drag and drop the tiles to customize your brand. The app will prevent you from reordering the tiles and break your sentence.
 
-## Available Scripts
+## Run the project
 
-In the project directory, you can run:
+```
+npm install
+npm start
+```
 
-### `npm run dev` or `npm start`
+## Build the project
 
-Runs the app in the development mode.<br>
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+```
+npm build
+```
 
-The page will reload if you make edits.<br>
-
-### `npm run build`
-
-Builds the app for production to the `dist` folder.<br>
-It correctly bundles Solid in production mode and optimizes the build for the best performance.
-
-The build is minified and the filenames include the hashes.<br>
-Your app is ready to be deployed!
-
-## Deployment
-
-You can deploy the `dist` folder to any static host provider (netlify, surge, now, etc.)
+You can deploy the `dist/` folder after that.
