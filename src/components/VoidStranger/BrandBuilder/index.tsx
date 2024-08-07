@@ -1,7 +1,7 @@
 import { DragDropProvider, DragDropSensors, DragEventHandler, DragOverlay, closestCenter, createDraggable, createDroppable } from "@thisbeyond/solid-dnd";
-import { Component, Match, Show, createSignal, Switch, onCleanup, onMount, Index, createEffect, For } from "solid-js";
+import { Component, Match, Show, createSignal, Switch, onCleanup, onMount, Index, For } from "solid-js";
 import { Letter } from "../Letter";
-import { chunks, isOrdered, toVoidStrangerLetter } from "../../../utils";
+import { chunks, fromVoidStrangerLetter, isOrdered, toVoidStrangerLetter } from "../../../utils";
 import { useSearchParams } from "@solidjs/router";
 import { BRANDS } from "../../brands";
 
@@ -92,13 +92,12 @@ export const BrandBuilder: Component = () => {
   let resizeObserver: ResizeObserver | undefined;
   let brandRef: HTMLDivElement | undefined;
 
-  const [params] = useSearchParams<{ q: string }>();
-  const [blocks, setBlocks] = createSignal<BlockProps[]>([]);
+  const [params, setParams] = useSearchParams<{ q: string }>();
   const [activeBlock, setActiveBlock] = createSignal<LetterBlockProps>();
   const [pixelScale, setPixelScale] = createSignal<number>(0);
   const [pixelOffset, setPixelOffset] = createSignal<{ left:number, top: number }>({ left: 0, top: 0});
 
-  createEffect(() => {
+  const blocks = () => {
     const bl: BlockProps[] = (params.q ?? "")
       .split("")
       .map((element) => toVoidStrangerLetter(element.toUpperCase()))
@@ -106,12 +105,11 @@ export const BrandBuilder: Component = () => {
         element !== null ? 
           { type: "letter", value: element, id: index + 1, pixelScale: 0 }
           : { type: "empty", id: index + 1, pixelScale: 0 });
-
   
     const remainings: EmptyBlockProps[] = Array.from({ length: 6 * 6 - bl.length }, (_, k) => ({ type: "empty", id: bl.length + k + 1, pixelScale: 0 }));
 
-    setBlocks([...bl, ...remainings].slice(0, 6 * 6));
-  });
+    return [...bl, ...remainings].slice(0, 6 * 6);
+  };
   
   const onDragStart: DragEventHandler = ({ draggable }) => {
     const block = blocks().find(el => el.id === draggable.id);
@@ -135,7 +133,7 @@ export const BrandBuilder: Component = () => {
         copy[toIndex] = temp;
 
         if (isOrdered(copy.filter((block) => block.type === "letter").map(block => block.id))) {
-          setBlocks(copy);
+          setParams({ q: copy.map(block => block.type === "empty" ? "." : (fromVoidStrangerLetter(block.value)) || ".").join("") });
         }
       }
     }
