@@ -99,16 +99,18 @@ export const BrandBuilder: Component = () => {
   const [pixelOffset, setPixelOffset] = createSignal<{ left:number, top: number }>({ left: 0, top: 0});
 
   createEffect(() => {
-    const bl: LetterBlockProps[] = (params.q ?? "")
+    const bl: BlockProps[] = (params.q ?? "")
       .split("")
       .map((element) => toVoidStrangerLetter(element.toUpperCase()))
-      .filter((element): element is number => element !== null)
-      .map((element, index) => ({ type: "letter", value: element, id: index + 1, pixelScale: 0 }));
+      .map((element, index) => 
+        element !== null ? 
+          { type: "letter", value: element, id: index + 1, pixelScale: 0 }
+          : { type: "empty", id: index + 1, pixelScale: 0 });
 
   
     const remainings: EmptyBlockProps[] = Array.from({ length: 6 * 6 - bl.length }, (_, k) => ({ type: "empty", id: bl.length + k + 1, pixelScale: 0 }));
 
-    setBlocks([...bl, ...remainings]);
+    setBlocks([...bl, ...remainings].slice(0, 6 * 6));
   });
   
   const onDragStart: DragEventHandler = ({ draggable }) => {

@@ -9,10 +9,19 @@ Only characters from A to Z (lowercase or uppercase) will be included.
 
 For example:
 ```
-https://brandbuilder.aleryc.fr/?q=only%20a%20memory%20remains
+https://brandbuilder.aleryc.fr/?q=onlyamemoryremains
 ```
 
 In the page, you can drag and drop the tiles to customize your brand. The app will prevent you from reordering the tiles and break your sentence.
+
+You can also put any non-alphabetical characters between letters to add an empty space
+
+Example!
+
+```
+https://brandbuilder.aleryc.fr/?q=o.n..l.yam...emo....ryr...ema.i..n.s
+```
+
 
 ## Run the project
 
