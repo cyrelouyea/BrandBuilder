@@ -16,6 +16,7 @@ import {
   EmptyTile,
   Engine,
   Entity,
+  GlassTile,
   Leech,
   NormalTile,
   PlayerChoice,
@@ -31,6 +32,9 @@ import {
 import boulderImg from "../../../assets/tiles/boulder.png";
 import exitImg from "../../../assets/tiles/exit.png";
 import floorImg from "../../../assets/tiles/floor.png";
+import glassImg from "../../../assets/tiles/glass.png";
+import damagedGlassImg from "../../../assets/tiles/damagedglass.png";
+
 import leechLeftImg from "../../../assets/tiles/leech-left.png";
 import leechRightImg from "../../../assets/tiles/leech-right.png";
 import playerDownImg from "../../../assets/tiles/player-down.png";
@@ -40,48 +44,13 @@ import playerLeftImg from "../../../assets/tiles/player-left.png";
 
 const WIDTH = 14;
 
-// const TILES = [
-//   "WWWWWWWWWWWWWW",
-//   "WWWWW....WWWWW",
-//   "WWWWW.E..WW.WW",
-//   "WW.WW....WW.WW",
-//   "WW.WW    WW WW",
-//   "WW......... WW",
-//   "WW......... WW",
-//   "WWWWWWWWWWWWWW",
-// ];
-
-// const ENTITIES = [
-//   "..............",
-//   "........R.....",
-//   "...........R..",
-//   "..P...........",
-//   "..............",
-//   "...R.....L....",
-//   "......R.R.....",
-//   "..............",
-// ];
-
-const pickableTiles = [
-  { key: ".", keywords: "normal", name: "Normal" },
-  { key: "W", keywords: "wall obstacle blocking", name: "Wall" },
-  { key: " ", keywords: "hole space empty pit", name: "Pit" },
-  { key: "E", keywords: "stairs exit", name: "Stairs" },
-];
-
-const pickableEntities = [
-  { key: ".", keywords: "remove nothing", name: "None"  },
-  { key: "R", keywords: "rock boulder egg", name: "Boulder" },
-  { key: "Ll", keywords: "leech snake enemy left", name: "Leech (L)" },
-  { key: "Lr", keywords: "leech snake enemy right", name: "Leech (R)" },
-  { key: "P", keywords: "player", name: "Player" },
-];
 
 const TILES_MAPPING = new Map<string, { invoke: () => Tile, keywords: string, name: string }>([
   ["W", { invoke: () => new WallTile(), keywords: "wall obstacle blocking", name: "Wall" }],
   [".", { invoke: () => new NormalTile(), keywords: "normal", name: "Normal"  }],
   ["E", { invoke: () => new Stair(), keywords: "hole space empty", name: "Stairs" }],
   [" ", { invoke: () => new EmptyTile(), keywords: "stairs exit", name: "Hole" }],
+  ["G", { invoke: () => new GlassTile(), keywords: "glass ice", name: "Glass" }],
 ]);
 
 const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords: string, name: string }>([
@@ -115,6 +84,16 @@ function getBackgroundTile(tile: Tile): JSX.CSSProperties {
   case "stair":
     return {
       "background-image": "url(" + exitImg + ")",
+      "background-size": "cover",
+    };
+  case "glass":
+    return {
+      "background-image": "url(" + glassImg + ")",
+      "background-size": "cover",
+    };
+  case "damagedglass":
+    return {
+      "background-image": "url(" + damagedGlassImg + ")",
       "background-size": "cover",
     };
   default:
