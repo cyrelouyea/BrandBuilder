@@ -19,6 +19,7 @@ import {
   Entity,
   ExploTile,
   GlassTile,
+  LazyEye,
   Leech,
   NormalTile,
   PlayerChoice,
@@ -45,6 +46,7 @@ import playerDownImg from "../../../assets/tiles/player-down.png";
 import playerUpImg from "../../../assets/tiles/player-up.png";
 import playerRightImg from "../../../assets/tiles/player-right.png";
 import playerLeftImg from "../../../assets/tiles/player-left.png";
+import lazyEyeImg from "../../../assets/tiles/lazyeye.png";
 
 const WIDTH = 14;
 
@@ -65,6 +67,7 @@ const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords
   ["P", { invoke: () => new VoidPlayer(), keywords: "player", name: "Player" }],
   ["Ll", { invoke: () => new Leech(false), keywords: "leech snake enemy left", name: "Leech (left)" }],
   ["Lr", { invoke: () => new Leech(true), keywords: "leech snake enemy right", name: "Leech (right)" }],
+  ["E", { invoke: () => new LazyEye(), keywords: "lazy eye enemy", name: "Lazy Eye" }]
 ]);
 
 
@@ -128,6 +131,12 @@ function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
   case "rock":
     return {
       "background-image": "url(" + boulderImg + ")",
+      "background-size": "cover",
+    };
+
+  case "lazyeye":
+    return {
+      "background-image": "url(" + lazyEyeImg + ")",
       "background-size": "cover",
     };
   case "leech":
