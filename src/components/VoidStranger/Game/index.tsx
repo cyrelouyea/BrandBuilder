@@ -12,10 +12,12 @@ import {
   Setter,
 } from "solid-js";
 import {
+  BombTile,
   Direction,
   EmptyTile,
   Engine,
   Entity,
+  ExploTile,
   GlassTile,
   Leech,
   NormalTile,
@@ -34,6 +36,8 @@ import exitImg from "../../../assets/tiles/exit.png";
 import floorImg from "../../../assets/tiles/floor.png";
 import glassImg from "../../../assets/tiles/glass.png";
 import damagedGlassImg from "../../../assets/tiles/damagedglass.png";
+import bombImg from "../../../assets/tiles/bomb.png";
+import exploImg from "../../../assets/tiles/explo.png";
 
 import leechLeftImg from "../../../assets/tiles/leech-left.png";
 import leechRightImg from "../../../assets/tiles/leech-right.png";
@@ -51,6 +55,8 @@ const TILES_MAPPING = new Map<string, { invoke: () => Tile, keywords: string, na
   ["E", { invoke: () => new Stair(), keywords: "hole space empty", name: "Stairs" }],
   [" ", { invoke: () => new EmptyTile(), keywords: "stairs exit", name: "Hole" }],
   ["G", { invoke: () => new GlassTile(), keywords: "glass ice", name: "Glass" }],
+  ["B", { invoke: () => new BombTile(), keywords: "bomb explo", name: "Bomb" }],
+  ["Be", { invoke: () => new ExploTile(), keywords: "bomb explo", name: "Explo" }],
 ]);
 
 const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords: string, name: string }>([
@@ -94,6 +100,16 @@ function getBackgroundTile(tile: Tile): JSX.CSSProperties {
   case "damagedglass":
     return {
       "background-image": "url(" + damagedGlassImg + ")",
+      "background-size": "cover",
+    };
+  case "bomb":
+    return {
+      "background-image": "url(" + bombImg + ")",
+      "background-size": "cover",
+    };
+  case "explo":
+    return {
+      "background-image": "url(" + exploImg + ")",
       "background-size": "cover",
     };
   default:
@@ -482,7 +498,6 @@ export const VoidStrangerEditor: Component<{ tiles: string[], entities: string[]
                         ...getBackgroundTile(tile),
                       }}
                       onMouseOver={(ev) => {
-                        console.log(ev, row(), col());
                         if (Boolean(ev.buttons & 1) && selectedKey().type === "tile") {
                           const key = selectedKey().key;
                           setTile(key, row(), col());

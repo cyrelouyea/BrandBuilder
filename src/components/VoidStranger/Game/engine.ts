@@ -20,10 +20,12 @@ export interface CommonEvent {
 
 export interface EnterEvent extends CommonEvent {
   entity: RegisteredEntity;
+  transformed?: boolean;
 }
 
 export interface LeaveEvent extends CommonEvent {
   entity: RegisteredEntity;
+  transformed?: boolean;
 }
 
 export interface TurnEvent extends CommonEvent {
@@ -308,7 +310,11 @@ export class ExploTile extends AbstractTile {
     super("explo");
   }
 
-  onEnter(self: RegisteredTile, { engine }: EnterEvent) {
+  onEnter(self: RegisteredTile, { engine, transformed = false }: EnterEvent) {
+    if (transformed) {
+      return;
+    }
+
     if (engine.getEntitiesAt(self.index).length > 1) {
       return;
     }
@@ -319,13 +325,18 @@ export class ExploTile extends AbstractTile {
     while (tilesStack.length > 0) {
       const tile = tilesStack.pop();
 
+
       if (tile === undefined) {
         continue;
       }
 
-      if (tile.tile.name === "explo") {
+      console.log(tile);
+
+      if (tile.tile.name !== "explo") {
         continue;
       }
+
+
 
       engine.transform(new EmptyTile(), tile.index);
 
@@ -943,8 +954,8 @@ export class EngineElements {
     this._tiles[index] = newTile;
 
     for (const entity of this._entities[index]) {
-      newTile.tile.onEnter(newTile, { engine: this._engine, entity });
-      oldTile.tile.onLeave(oldTile, { engine: this._engine, entity });
+      newTile.tile.onEnter(newTile, { engine: this._engine, entity, transformed: true });
+      oldTile.tile.onLeave(oldTile, { engine: this._engine, entity, transformed: true });
     }
 
     return { newTile, oldTile };
