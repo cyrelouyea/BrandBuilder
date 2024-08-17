@@ -6,7 +6,6 @@ import {
   For,
   JSX,
   createMemo,
-  Show,
   createEffect,
   Switch,
   Match,
@@ -187,10 +186,11 @@ function createEngine(entities: string[], tiles: string[]) {
 
 export const VoidStrangerGame: Component = () => {
   
-  const [tiles, setTiles] = createSignal(Array.from({ length: 14 * 8 }, () => "."));
-  const [entities, setEntities] = createSignal(Array.from({ length: 14 * 8 }, () => "."));
-  const [editorMode, setEditorMode] = createSignal(true);
+  const [tiles, setTiles] = createSignal<string[]>(Array.from({ length: 14 * 8 }, () => "."));
+  const [entities, setEntities] = createSignal<string[]>(Array.from({ length: 14 * 8,  }, (_, k) => k === 43 ? "P" : "."));
+  const [editorMode, setEditorMode] = createSignal<boolean>(true);
 
+  
   return (
     <Switch>
       <Match when={editorMode()}>
@@ -277,6 +277,7 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
     <div
       style={{
         display: "flex",
+        "flex-direction": "column",
         "justify-content": "center",
         "align-items": "center",
         height: "100%",
@@ -314,6 +315,10 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
           )}
         </For>
       </div>
+      <div style={{color: "white", "margin-top": "20px"}}><strong>🢁 🢃 🢂 🢀</strong>: Move</div>
+      <div style={{color: "white"}}><strong>Space</strong> or <strong>W</strong>: Action key</div>
+      <div style={{color: "white"}}><strong>R</strong>: Reset level</div>
+      <div style={{color: "white"}}><strong>Ctrl+E</strong>: Editor mode</div>
     </div>
   );
 };
@@ -403,11 +408,13 @@ export const VoidStrangerEditor: Component<{ tiles: string[], entities: string[]
           "overflow-y": "auto",
           "border-left": "1px solid white",
           "box-shadow": "-1px -1px 15px white",
+          padding: "5px 15px",
         }}
       >
         <div style={{display: "flex", "justify-content": "center", padding: "10px"}}>
           <input
             type="search"
+            placeholder="Search objects..."
             value={searchValue()}
             onInput={(ev) => setSearchValue(ev.target.value)}
             style={{width: "80%", height: "40px", "font-size": "1.2em", "text-align": "center", "background-color": "#333", "color": "white"}}
@@ -472,6 +479,7 @@ export const VoidStrangerEditor: Component<{ tiles: string[], entities: string[]
       <div
         style={{
           display: "flex",
+          "flex-direction": "column",
           "justify-content": "center",
           "align-items": "center",
           height: "100%",
@@ -540,6 +548,7 @@ export const VoidStrangerEditor: Component<{ tiles: string[], entities: string[]
             )}
           </For>
         </div>
+        <p style={{color: "white"}}><strong>Ctrl+P</strong>: Game mode</p>
       </div>
     </div>
   );
