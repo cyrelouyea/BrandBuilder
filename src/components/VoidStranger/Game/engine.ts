@@ -861,6 +861,38 @@ export class Killer extends VoidObject {
   constructor() { super("killer"); }
 }
 
+export class KillerManager extends VoidObject {
+  activated: boolean;
+
+  constructor() { 
+    super("killer-manager"); 
+    this.turns = [1, 3];
+    this.activated = false;
+  }
+
+  onTurn(self: RegisteredEntity<Entity>, { engine }: TurnEvent): void {
+    if (this.activated) {
+      return;
+    }
+
+    const hasEnemy = engine.entities.some(entities => 
+      entities.some(entity => entity.entity.kind === "enemy")
+    );
+
+    if (hasEnemy) {
+      return;
+    }
+
+    for (const entity of engine.entities.flat()) {
+      if (entity.entity.name === "killer") {
+        engine.kill(entity);
+      }
+    }
+
+    this.activated = true;
+  }
+}
+
 export class Slower extends VoidObject {
   private _isPushable: boolean;
 
@@ -896,14 +928,16 @@ export interface SetTileResult {
 export class EngineElements {
   private _engine: Engine;
   private _tiles: RegisteredTile[];
+  private _managers: RegisteredEntity[];
   private _entities: RegisteredEntity[][];
   private _entityIdToIndex: Map<number, number>;
   private _player: RegisteredEntity<VoidPlayer>;
 
-  constructor({ engine, tiles, entities }: { engine: Engine, tiles: RegisteredTile[], entities: RegisteredEntity[][] }) {
+  constructor({ engine, tiles, entities, managers }: { engine: Engine, tiles: RegisteredTile[], entities: RegisteredEntity[][], managers: RegisteredEntity[] }) {
     this._engine = engine;
     this._tiles = tiles;
     this._entities = entities;
+    this._managers = managers;
     this._entityIdToIndex = new Map(entities.flatMap(
       (entities, index) => entities.map(entity => [entity.id, index])
     ));
@@ -922,6 +956,7 @@ export class EngineElements {
 
   get tiles() { return this._tiles; }
   get entities() { return this._entities; }
+  get managers() { return this._managers; }
   get player() { return this._player; }
 
   addEntity<T extends Entity>(entity: T, index: number): RegisteredEntity<T> {
@@ -1015,7 +1050,7 @@ export class Engine {
 
   public earlyTurnEnd: boolean;
 
-  constructor(attrs: { tiles: Tile[], entities: (Entity | null)[], width: number }) {
+  constructor(attrs: { tiles: Tile[], entities: (Entity | null)[], managers: Entity[], width: number }) {
     if (attrs.width <= 0) {
       throw new Error("width must be positive");
     }
@@ -1038,8 +1073,9 @@ export class Engine {
         [new RegisteredEntity(this.generateId(), entity)] : 
         []
     );
+    const managers = attrs.managers.map((manager) => new RegisteredEntity(this.generateId(), manager));
     
-    this._elements = new EngineElements({ engine: this, entities, tiles });
+    this._elements = new EngineElements({ engine: this, entities, tiles, managers });
     this._forces = [];
     this._moves = [];
     this._stop = false;
@@ -1083,6 +1119,11 @@ export class Engine {
     const sortedEntities = this._elements.entities
       .flat()
       .map(entity => entity.entity.turns.map(turn => ({ turn, entity })))
+      .concat(this._elements.managers.map(
+        manager => manager.entity.turns.map(
+          turn => ({ turn, entity: manager })
+        )
+      ))
       .flat()
       .sort(({ turn: a }, { turn: b }) => a - b);
 
@@ -1287,3 +1328,4 @@ export class Engine {
     return row * this._width + col;
   }
 }
+

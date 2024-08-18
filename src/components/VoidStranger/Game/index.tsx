@@ -10,6 +10,7 @@ import {
   Switch,
   Match,
   Setter,
+  Index,
 } from "solid-js";
 import {
   Beaver,
@@ -21,6 +22,8 @@ import {
   ExploTile,
   GlassTile,
   Greeder,
+  Killer,
+  KillerManager,
   LazyEye,
   Leech,
   Lover,
@@ -80,6 +83,10 @@ import loverImg from "../../../assets/tiles/lover.png";
 import slowerImg from "../../../assets/tiles/slower.png";
 import slowerStopImg from "../../../assets/tiles/slower-stop.png";
 import greederImg from "../../../assets/tiles/greeder.png";
+import killerImg from "../../../assets/tiles/killer.png";
+
+
+import "./index.css";
 
 const WIDTH = 14;
 
@@ -111,7 +118,8 @@ const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords
   ["Mvh", { invoke: () => new Mimic(true, true), keywords: "mimic cif enemy vertical horizontal", name: "Mimic (V/H)" }],
   ["Lo", { invoke: () => new Lover(), keywords: "lover eus statue", name: "Lover" }],
   ["Sl", { invoke: () => new Slower(), keywords: "slower gor statue", name: "Slower" }],
-  ["Gr", { invoke: () => new Greeder(), keywords: "greeder mon statue", name: "Greeder" }]
+  ["Gr", { invoke: () => new Greeder(), keywords: "greeder mon statue", name: "Greeder" }],
+  ["Ki", { invoke: () => new Killer(), keywords: "killer tan statue", name: "Killer" }],
 ]);
 
 
@@ -196,31 +204,26 @@ function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
   case "rock":
     return {
       "background-image": "url(" + boulderImg + ")",
-      
     };
 
   case "lazyeye":
     return {
       "background-image": "url(" + lazyEyeImg + ")",
-      
     };
   case "leech":
     if (entity.facing === Direction.Left) {
       return {
         "background-image": "url(" + leechLeftImg + ")",
-        
       };
     } else {
       return {
         "background-image": "url(" + leechRightImg + ")",
-        
       };
     }
   case "player":
     if (entity.facing === Direction.Down) {
       return {
         "background-image": "url(" + playerDownImg + ")",
-        
       };
     } else if (entity.facing === Direction.Up) {
       return {
@@ -230,41 +233,34 @@ function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
     } else if (entity.facing === Direction.Left) {
       return {
         "background-image": "url(" + playerLeftImg + ")",
-        
       };
     } else {
       return {
         "background-image": "url(" + playerRightImg + ")",
-        
       };
     }
   case "smile":
     if (entity.facing === Direction.Left) {
       return {
         "background-image": "url(" + smileLeftImg + ")",
-        
       };
     } else if (entity.facing === Direction.Right) {
       return {
         "background-image": "url(" + smileRightImg + ")",
-        
       };
     } else {
       return {
         "background-image": "url(" + smileLeftImg + ")",
-        
       };
     }
   case "maggot":
     if (entity.facing === Direction.Up) {
       return {
         "background-image": "url(" + maggotUpImg + ")",
-        
       };
     } else {
       return {
         "background-image": "url(" + maggotDownImg + ")",
-        
       };
     }
 
@@ -272,22 +268,18 @@ function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
     if (entity.facing === Direction.Down) {
       return {
         "background-image": "url(" + beaverDownImg + ")",
-        
       };
     } else if (entity.facing === Direction.Up) {
       return {
         "background-image": "url(" + beaverUpImg + ")",
-        
       };
     } else if (entity.facing === Direction.Left) {
       return {
         "background-image": "url(" + beaverLeftImg + ")",
-        
       };
     } else {
       return {
         "background-image": "url(" + beaverRightImg + ")",
-        
       };
     }
   case "mimic": // doesn't exist in the original game
@@ -363,6 +355,10 @@ function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
     return {
       "background-image": "url(" + greederImg + ")",
     };
+  case "killer":
+    return {
+      "background-image": "url(" + killerImg + ")",
+    };
   }
 
   return {};
@@ -375,6 +371,7 @@ function createEngine(entities: string[], tiles: string[]) {
       .map((chr) => ENTITIES_MAPPING.get(chr)!.invoke()),
     tiles: tiles
       .map((chr) => TILES_MAPPING.get(chr)!.invoke()),
+    managers: [new KillerManager()],
   });
 }
 
@@ -695,74 +692,79 @@ export const VoidStrangerEditor: Component<{ tiles: string[], entities: string[]
         }}
       >
         <div style={{ display: "flex", "flex-direction": "column" }}>
-          <For each={Array.from(chunk(zip(tiles(), entities()), WIDTH))}>
+          <Index each={Array.from(chunk(zip(tiles(), entities()), WIDTH))}>
             {(chunk, row) => (
               <div style={{ display: "flex", "flex-direction": "row" }}>
-                <For each={chunk}>
-                  {([tile, entity], col) => (
-                    <div
-                      style={{
-                        display: "flex",
-                        width: "57px",
-                        height: "57px",
-                        border: "1px solid #ccc",
-                        margin: "2px",
-                        "image-rendering": "pixelated",
-                        "background-position-x": "center",
-                        "background-repeat": "no-repeat",
-                        "background-size": "contain",
-                        ...getBackgroundTile(tile, { row: row(), col: col(), tiles: tiles() }),
-                      }}
-                      onMouseOver={(ev) => {
-                        if (Boolean(ev.buttons & 1) && selectedKey().type === "tile") {
-                          const key = selectedKey().key;
-                          setTile(key, row(), col());
-                        }
-                        if (Boolean(ev.buttons & 1) && selectedKey().type === "entity") {
-                          const key = selectedKey().key;
-                          setEntity(key, row(), col());
-                        }
-                        if (ev.buttons & 2) {
-                          setEntity(".", row(), col());
-                        }
-                      }}
-                      onMouseDown={(ev) => {
-                        if (Boolean(ev.buttons & 1) && selectedKey().type === "tile") {
-                          const key = selectedKey().key;
-                          setTile(key, row(), col());
-                        }
-                        if (Boolean(ev.buttons & 1) && selectedKey().type === "entity") {
-                          const key = selectedKey().key;
-                          setEntity(key, row(), col());
-                        }
-                        if (ev.buttons & 2) {
-                          if (selectedKey().type === "entity") {
-                            setEntity(".", row(), col());
-                          }
-                        }
-                      }}
-                      onContextMenu={(ev) => { ev.preventDefault(); }}
-                    >
-                      <div
-                        style={{
-                          "font-size": "2em",
-                          width: "100%",
-                          height: "100%",
-                          "background-position-x": "center",
-                          "background-repeat": "no-repeat",
-                          "background-size": "contain",
-                          ...getBackgroundEntity(entity ? [entity] : []),
-                        }}
-                      />
-                    </div>
-                  )}
-                </For>
+                <Index each={chunk()}>
+                  {(element, col) => <EditorTile 
+                    col={col}
+                    row={row}
+                    tile={element()[0]}
+                    entity={element()[1]}
+                    selectedKey={selectedKey()}
+                    setEntity={setEntity}
+                    setTile={setTile}
+                    tiles={tiles()}
+                  />}
+                </Index>
               </div>
             )}
-          </For>
+          </Index>
         </div>
         <p style={{color: "white"}}><strong>Ctrl+P</strong>: Game mode</p>
       </div>
     </div>
   );
+};
+
+
+const EditorTile: Component<{ tile: Tile, entity: Entity | null, selectedKey: { key: string, type: string }, row: number, col: number, setTile: (key: string, row: number, col: number) => void, setEntity: (key: string, row: number, col: number) => void, tiles: Tile[] }> = (props) => {
+  
+  return <div
+    draggable={false}
+    classList={{"void-stranger": true, "editor-tile": true }}
+    onMouseOver={(ev) => {
+      if (Boolean(ev.buttons & 1) && props.selectedKey.type === "tile") {
+        const key = props.selectedKey.key;
+        props.setTile(key, props.row, props.col);
+      }
+      if (Boolean(ev.buttons & 1) && props.selectedKey.type === "entity") {
+        const key = props.selectedKey.key;
+        props.setEntity(key, props.row, props.col);
+      }
+    }}
+    onMouseDown={(ev) => {
+      if (Boolean(ev.buttons & 1) && props.selectedKey.type === "tile") {
+        const key = props.selectedKey.key;
+        props.setTile(key, props.row, props.col);
+      }
+      if (Boolean(ev.buttons & 1) && props.selectedKey.type === "entity") {
+        const key = props.selectedKey.key;
+        props.setEntity(key, props.row, props.col);
+      }
+    }}
+  >
+    <div
+      draggable={false}
+      class="void-stranger tile-layer"
+      style={{
+        ...getBackgroundTile(props.tile, { row: props.row, col: props.col, tiles: props.tiles }),
+      }}
+    >
+      <div  
+        draggable={false}
+        class="void-stranger entity-layer"
+        style={{
+          "font-size": "2em",
+          width: "100%",
+          height: "100%",
+          "background-position-x": "center",
+          "background-repeat": "no-repeat",
+          "background-size": "contain",
+          ...getBackgroundEntity(props.entity ? [props.entity] : []),
+        }}
+      />
+
+    </div>
+  </div>;
 };

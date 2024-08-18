@@ -1,0 +1,33 @@
+.void-stranger.editor-tile {
+    width: 60px;
+    height: 60px;
+    border: 3px solid transparent;
+    z-index: 0;
+}
+
+.void-stranger.editor-tile > .void-stranger.tile-layer {
+    width: 100%;
+    height: 100%;
+    image-rendering: pixelated;
+    background-position-x: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+
+.void-stranger.editor-tile:hover {
+    cursor: pointer;
+    border-color: rgb(255, 208, 0);
+    z-index: 1;
+    transform: scale(1.2, 1.2);
+}
+
+.void-stranger.editor-tile:hover * {
+    background-color: rgba(255, 208, 0, 0.6);
+    background-blend-mode: multiply;
+}
+
+
+
+.void-stranger.editor-tile:not(:hover) {
+    filter: brightness(100%);
+}
