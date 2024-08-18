@@ -22,6 +22,7 @@ import {
   GlassTile,
   LazyEye,
   Leech,
+  Lover,
   Maggot,
   Mimic,
   NormalTile,
@@ -29,6 +30,7 @@ import {
   RegisteredEntity,
   RegisteredTile,
   Rock,
+  Slower,
   Smile,
   Stair,
   Tile,
@@ -73,6 +75,10 @@ import mimicGreyUpImg from "../../../assets/tiles/mimic-grey-up.png";
 import mimicGreyLeftImg from "../../../assets/tiles/mimic-grey-left.png";
 import mimicGreyRightImg from "../../../assets/tiles/mimic-grey-right.png";
 
+import loverImg from "../../../assets/tiles/lover.png";
+import slowerImg from "../../../assets/tiles/slower.png";
+import slowerStopImg from "../../../assets/tiles/slower-stop.png";
+
 const WIDTH = 14;
 
 
@@ -88,19 +94,21 @@ const TILES_MAPPING = new Map<string, { invoke: () => Tile, keywords: string, na
 
 const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords: string, name: string }>([
   [".", { invoke: () => null, keywords: "remove nothing", name: "None" }],
-  ["R", { invoke: () => new Rock(), keywords: "rock boulder egg", name: "Boulder" }],
-  ["P", { invoke: () => new VoidPlayer(), keywords: "player", name: "Player" }],
-  ["Ll", { invoke: () => new Leech(false), keywords: "leech snake enemy left", name: "Leech (L)" }],
-  ["Lr", { invoke: () => new Leech(true), keywords: "leech snake enemy right", name: "Leech (R)" }],
-  ["E", { invoke: () => new LazyEye(), keywords: "lazy eye enemy", name: "Lazy Eye" }],
-  ["S", { invoke: () => new Smile(), keywords: "smile", name: "Smile" }],
-  ["Mu", { invoke: () => new Maggot(false), keywords: "maggot enemy left", name: "Maggot (U)" }],
-  ["Md", { invoke: () => new Maggot(true), keywords: "maggot enemy right", name: "Leech (D)" }],
-  ["B", { invoke: () => new Beaver(), keywords: "beaver enemy", name: "Beaver" }],
-  ["M", { invoke: () => new Mimic(false, false), keywords: "mimic enemy", name: "Mimic" }],
-  ["Mv", { invoke: () => new Mimic(true, false), keywords: "mimic enemy vertical", name: "Mimic (V)" }],
-  ["Mh", { invoke: () => new Mimic(false, true), keywords: "mimic enemy horizontal", name: "Mimic (H)" }],
-  ["Mvh", { invoke: () => new Mimic(true, true), keywords: "mimic enemy vertical horizontal", name: "Mimic (V/H)" }],
+  ["R", { invoke: () => new Rock(), keywords: "rock boulder egg tail", name: "Boulder" }],
+  ["P", { invoke: () => new VoidPlayer(), keywords: "player grey", name: "Player" }],
+  ["Ll", { invoke: () => new Leech(false), keywords: "leech eus snake enemy left", name: "Leech (L)" }],
+  ["Lr", { invoke: () => new Leech(true), keywords: "leech eus snake enemy right", name: "Leech (R)" }],
+  ["E", { invoke: () => new LazyEye(), keywords: "lazy eye gor enemy", name: "Lazy Eye" }],
+  ["S", { invoke: () => new Smile(), keywords: "smile bee", name: "Smile" }],
+  ["Mu", { invoke: () => new Maggot(false), keywords: "maggot mon enemy left", name: "Maggot (U)" }],
+  ["Md", { invoke: () => new Maggot(true), keywords: "maggot mon enemy right", name: "Leech (D)" }],
+  ["B", { invoke: () => new Beaver(), keywords: "beaver tan enemy", name: "Beaver" }],
+  ["M", { invoke: () => new Mimic(false, false), keywords: "mimic cif enemy", name: "Mimic" }],
+  ["Mv", { invoke: () => new Mimic(true, false), keywords: "mimic cif enemy vertical", name: "Mimic (V)" }],
+  ["Mh", { invoke: () => new Mimic(false, true), keywords: "mimic cif enemy horizontal", name: "Mimic (H)" }],
+  ["Mvh", { invoke: () => new Mimic(true, true), keywords: "mimic cif enemy vertical horizontal", name: "Mimic (V/H)" }],
+  ["Lo", { invoke: () => new Lover(), keywords: "lover eus statue", name: "Lover" }],
+  ["Sl", { invoke: () => new Slower(), keywords: "slower gor statue", name: "Slower" }],
 ]);
 
 
@@ -334,8 +342,20 @@ function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
         "background-image": "url(" + mimicBlackRightImg + ")",
       };
     }
-
-
+  case "lover":
+    return {
+      "background-image": "url(" + loverImg + ")",
+    };
+  case "slower":
+    if (entity.isPushable) {
+      return {
+        "background-image": "url(" + slowerImg + ")",
+      };
+    } else {
+      return {
+        "background-image": "url(" + slowerStopImg + ")",
+      };
+    }
   }
 
   return {};

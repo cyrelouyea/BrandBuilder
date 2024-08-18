@@ -34,10 +34,7 @@ export interface TurnEvent extends CommonEvent {
 
 export interface FallEvent extends CommonEvent {}
 
-export interface PushEvent extends CommonEvent {
-  pushedBy: Engine,
-  newPosition: { row: number, col: number, index: number };
-}
+export interface PushEvent extends CommonEvent {}
 
 export interface DeathEvent extends CommonEvent {
   killer: RegisteredEntity | null
@@ -820,9 +817,9 @@ export class Lover extends VoidObject {
   constructor() { super("lover"); }
 
   onFall(self: RegisteredEntity, { engine }: FallEvent) {
-    super.onFall(self, { engine });
     const index = engine.getIndex(self.id);
     if (index !== undefined) {
+      super.onFall(self, { engine });
       engine.transform(new NormalTile(), index);
     }
   }
@@ -1186,6 +1183,7 @@ export class Engine {
       }
 
       this._elements.moveEntity(entity, newIndex);
+      entity.entity.onPush(entity, { engine: this });
     }
 
     for (const entities of this._elements.entities) {
