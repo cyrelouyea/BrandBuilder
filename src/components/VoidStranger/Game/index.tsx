@@ -21,6 +21,7 @@ import {
   GlassTile,
   LazyEye,
   Leech,
+  Maggot,
   NormalTile,
   PlayerChoice,
   RegisteredEntity,
@@ -51,6 +52,8 @@ import playerLeftImg from "../../../assets/tiles/player-left.png";
 import lazyEyeImg from "../../../assets/tiles/lazyeye.png";
 import smileLeftImg from "../../../assets/tiles/smile-left.png";
 import smileRightImg from "../../../assets/tiles/smile-right.png";
+import maggotUpImg from "../../../assets/tiles/maggot-up.png";
+import maggotDownImg from "../../../assets/tiles/maggot-down.png";
 
 const WIDTH = 14;
 
@@ -69,10 +72,12 @@ const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords
   [".", { invoke: () => null, keywords: "remove nothing", name: "None" }],
   ["R", { invoke: () => new Rock(), keywords: "rock boulder egg", name: "Boulder" }],
   ["P", { invoke: () => new VoidPlayer(), keywords: "player", name: "Player" }],
-  ["Ll", { invoke: () => new Leech(false), keywords: "leech snake enemy left", name: "Leech (left)" }],
-  ["Lr", { invoke: () => new Leech(true), keywords: "leech snake enemy right", name: "Leech (right)" }],
+  ["Ll", { invoke: () => new Leech(false), keywords: "leech snake enemy left", name: "Leech (L)" }],
+  ["Lr", { invoke: () => new Leech(true), keywords: "leech snake enemy right", name: "Leech (R)" }],
   ["E", { invoke: () => new LazyEye(), keywords: "lazy eye enemy", name: "Lazy Eye" }],
-  ["S", { invoke: () => new Smile(), keywords: "smile", name: "Smile" }]
+  ["S", { invoke: () => new Smile(), keywords: "smile", name: "Smile" }],
+  ["Mu", { invoke: () => new Maggot(false), keywords: "maggot enemy left", name: "Maggot (U)" }],
+  ["Md", { invoke: () => new Maggot(true), keywords: "maggot enemy right", name: "Leech (D)" }],
 ]);
 
 
@@ -213,6 +218,18 @@ function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
     } else {
       return {
         "background-image": "url(" + smileLeftImg + ")",
+        "background-size": "cover",
+      };
+    }
+  case "maggot":
+    if (entity.facing === Direction.Up) {
+      return {
+        "background-image": "url(" + maggotUpImg + ")",
+        "background-size": "cover",
+      };
+    } else {
+      return {
+        "background-image": "url(" + maggotDownImg + ")",
         "background-size": "cover",
       };
     }
