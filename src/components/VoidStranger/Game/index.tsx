@@ -20,6 +20,7 @@ import {
   Entity,
   ExploTile,
   GlassTile,
+  Greeder,
   LazyEye,
   Leech,
   Lover,
@@ -78,6 +79,7 @@ import mimicGreyRightImg from "../../../assets/tiles/mimic-grey-right.png";
 import loverImg from "../../../assets/tiles/lover.png";
 import slowerImg from "../../../assets/tiles/slower.png";
 import slowerStopImg from "../../../assets/tiles/slower-stop.png";
+import greederImg from "../../../assets/tiles/greeder.png";
 
 const WIDTH = 14;
 
@@ -109,6 +111,7 @@ const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords
   ["Mvh", { invoke: () => new Mimic(true, true), keywords: "mimic cif enemy vertical horizontal", name: "Mimic (V/H)" }],
   ["Lo", { invoke: () => new Lover(), keywords: "lover eus statue", name: "Lover" }],
   ["Sl", { invoke: () => new Slower(), keywords: "slower gor statue", name: "Slower" }],
+  ["Gr", { invoke: () => new Greeder(), keywords: "greeder mon statue", name: "Greeder" }]
 ]);
 
 
@@ -356,6 +359,10 @@ function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
         "background-image": "url(" + slowerStopImg + ")",
       };
     }
+  case "greeder":
+    return {
+      "background-image": "url(" + greederImg + ")",
+    };
   }
 
   return {};
