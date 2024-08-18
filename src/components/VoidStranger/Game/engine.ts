@@ -553,7 +553,7 @@ export class Beaver extends VoidEnemy {
     this.resetting = false;
   }
 
-  get facing() { return Direction.Down; }
+  get facing() { return this.charging ?? Direction.Down; }
 
   onTurn(self: RegisteredEntity, { engine }: TurnEvent): void {
     const index = engine.getIndex(self.id);
@@ -573,10 +573,12 @@ export class Beaver extends VoidEnemy {
       if (playerIndex === undefined) {
         return;
       }
-  
+      
+
       const way = getSightWay(engine, index, playerIndex);
 
-      if (way === null) {
+
+      if (way !== null) {
         this.charging = way;
       }
     }
@@ -587,6 +589,8 @@ export class Beaver extends VoidEnemy {
 
 
     const result = isBlocked(index, this.charging, engine);
+
+    console.log(result);
 
     if (result.blocked) {
       const player = result.blockedBy.find(entity => entity.entity.kind === "player");

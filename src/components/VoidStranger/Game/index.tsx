@@ -12,6 +12,7 @@ import {
   Setter,
 } from "solid-js";
 import {
+  Beaver,
   BombTile,
   Direction,
   EmptyTile,
@@ -54,6 +55,10 @@ import smileLeftImg from "../../../assets/tiles/smile-left.png";
 import smileRightImg from "../../../assets/tiles/smile-right.png";
 import maggotUpImg from "../../../assets/tiles/maggot-up.png";
 import maggotDownImg from "../../../assets/tiles/maggot-down.png";
+import beaverUpImg from "../../../assets/tiles/beaver-up.png";
+import beaverDownImg from "../../../assets/tiles/beaver-down.png";
+import beaverLeftImg from "../../../assets/tiles/beaver-left.png";
+import beaverRightImg from "../../../assets/tiles/beaver-right.png";
 
 const WIDTH = 14;
 
@@ -78,6 +83,7 @@ const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords
   ["S", { invoke: () => new Smile(), keywords: "smile", name: "Smile" }],
   ["Mu", { invoke: () => new Maggot(false), keywords: "maggot enemy left", name: "Maggot (U)" }],
   ["Md", { invoke: () => new Maggot(true), keywords: "maggot enemy right", name: "Leech (D)" }],
+  ["B", { invoke: () => new Beaver(), keywords: "beaver enemy", name: "Beaver" }],
 ]);
 
 
@@ -233,8 +239,30 @@ function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
         "background-size": "cover",
       };
     }
+
+  case "beaver":
+    if (entity.facing === Direction.Down) {
+      return {
+        "background-image": "url(" + beaverDownImg + ")",
+        "background-size": "cover",
+      };
+    } else if (entity.facing === Direction.Up) {
+      return {
+        "background-image": "url(" + beaverUpImg + ")",
+        "background-size": "cover",
+      };
+    } else if (entity.facing === Direction.Left) {
+      return {
+        "background-image": "url(" + beaverLeftImg + ")",
+        "background-size": "cover",
+      };
+    } else {
+      return {
+        "background-image": "url(" + beaverRightImg + ")",
+        "background-size": "cover",
+      };
+    }
   }
-  
 
   return {};
 }
