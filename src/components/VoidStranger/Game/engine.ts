@@ -103,14 +103,14 @@ function getSightWay(engine: Engine, indexA: number, indexB: number): Direction 
     const way = getWay(colB, colA);
 
     if (isInSight(engine, colB, colA, way, rowB, true)) {
-      return way > 0 ? Direction.Down : Direction.Up;
+      return way > 0 ? Direction.Left : Direction.Right;
     }
   }
 
   if (colB === colA) {
     const way = getWay(rowB, rowA);
     if (isInSight(engine, rowB, rowA, way, colB, false)) {
-      return way > 0 ? Direction.Right : Direction.Left;
+      return way > 0 ? Direction.Up : Direction.Down;
     }
   }
 
@@ -330,13 +330,9 @@ export class ExploTile extends AbstractTile {
         continue;
       }
 
-      console.log(tile);
-
       if (tile.tile.name !== "explo") {
         continue;
       }
-
-
 
       engine.transform(new EmptyTile(), tile.index);
 

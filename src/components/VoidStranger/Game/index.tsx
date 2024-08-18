@@ -26,13 +26,14 @@ import {
   RegisteredEntity,
   RegisteredTile,
   Rock,
+  Smile,
   Stair,
   Tile,
   VoidPlayer,
   WallTile,
 } from "./engine";
 
-import boulderImg from "../../../assets/tiles/boulder.png";
+import floorRemovedImg from "../../../assets/tiles/floor-removed.png";
 import exitImg from "../../../assets/tiles/exit.png";
 import floorImg from "../../../assets/tiles/floor.png";
 import glassImg from "../../../assets/tiles/glass.png";
@@ -40,6 +41,7 @@ import damagedGlassImg from "../../../assets/tiles/damagedglass.png";
 import bombImg from "../../../assets/tiles/bomb.png";
 import exploImg from "../../../assets/tiles/explo.png";
 
+import boulderImg from "../../../assets/tiles/boulder.png";
 import leechLeftImg from "../../../assets/tiles/leech-left.png";
 import leechRightImg from "../../../assets/tiles/leech-right.png";
 import playerDownImg from "../../../assets/tiles/player-down.png";
@@ -47,6 +49,8 @@ import playerUpImg from "../../../assets/tiles/player-up.png";
 import playerRightImg from "../../../assets/tiles/player-right.png";
 import playerLeftImg from "../../../assets/tiles/player-left.png";
 import lazyEyeImg from "../../../assets/tiles/lazyeye.png";
+import smileLeftImg from "../../../assets/tiles/smile-left.png";
+import smileRightImg from "../../../assets/tiles/smile-right.png";
 
 const WIDTH = 14;
 
@@ -67,7 +71,8 @@ const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords
   ["P", { invoke: () => new VoidPlayer(), keywords: "player", name: "Player" }],
   ["Ll", { invoke: () => new Leech(false), keywords: "leech snake enemy left", name: "Leech (left)" }],
   ["Lr", { invoke: () => new Leech(true), keywords: "leech snake enemy right", name: "Leech (right)" }],
-  ["E", { invoke: () => new LazyEye(), keywords: "lazy eye enemy", name: "Lazy Eye" }]
+  ["E", { invoke: () => new LazyEye(), keywords: "lazy eye enemy", name: "Lazy Eye" }],
+  ["S", { invoke: () => new Smile(), keywords: "smile", name: "Smile" }]
 ]);
 
 
@@ -81,12 +86,13 @@ function* chunk<T>(array: T[], size: number): IterableIterator<T[]> {
   }
 }
 
-function getBackgroundTile(tile: Tile): JSX.CSSProperties {
+function getBackgroundTile(tile: Tile, context?: { row: number, col: number, tiles: Tile[] }): JSX.CSSProperties {
   switch (tile.name) {
   case "wall":
     return { "background-color": "#333" };
   case "normal":
     return {
+      "background-color": "white",
       "background-image": "url(" + floorImg + ")",
       "background-size": "cover",
     };
@@ -115,8 +121,28 @@ function getBackgroundTile(tile: Tile): JSX.CSSProperties {
       "background-image": "url(" + exploImg + ")",
       "background-size": "cover",
     };
+  case "empty": {
+    if (context === undefined) {
+      return { "background-color": "transparent" };
+    }
+
+    const { row, col, tiles } = context;
+
+    if (row === 0) {
+      return { "background-color": "transparent" };
+    }
+
+    if (tiles[(row - 1) * WIDTH + col].name === "empty") {
+      return { "background-color": "transparent" };
+    } else {
+      return {
+        "background-image": "url(" + floorRemovedImg + ")",
+        "background-size": "cover",
+      };
+    }
+  }
   default:
-    return { "background-color": "transparent" };
+    return {};
   }
 }
 
@@ -173,7 +199,25 @@ function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
         "background-size": "cover",
       };
     }
+  case "smile":
+    if (entity.facing === Direction.Left) {
+      return {
+        "background-image": "url(" + smileLeftImg + ")",
+        "background-size": "cover",
+      };
+    } else if (entity.facing === Direction.Right) {
+      return {
+        "background-image": "url(" + smileRightImg + ")",
+        "background-size": "cover",
+      };
+    } else {
+      return {
+        "background-image": "url(" + smileLeftImg + ")",
+        "background-size": "cover",
+      };
+    }
   }
+  
 
   return {};
 }
@@ -291,17 +335,17 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
     >
       <div style={{ display: "flex", "flex-direction": "column" }}>
         <For each={Array.from(chunk(zip(tiles(), entities()), WIDTH))}>
-          {(chunk) => (
+          {(chunk, row) => (
             <div style={{ display: "flex", "flex-direction": "row" }}>
               <For each={chunk}>
-                {([tile, entitiesAt]) => (
+                {([tile, entitiesAt], col) => (
                   <div
                     style={{
                       display: "flex",
                       width: "60px",
                       height: "60px",
                       "image-rendering": "pixelated",
-                      ...getBackgroundTile(tile.tile),
+                      ...getBackgroundTile(tile.tile, { row: row(), col: col(), tiles: engine.tiles.map(tile => tile.tile) }),
                     }}
                   >
                     <div
@@ -506,7 +550,7 @@ export const VoidStrangerEditor: Component<{ tiles: string[], entities: string[]
                         border: "1px solid #ccc",
                         margin: "2px",
                         "image-rendering": "pixelated",
-                        ...getBackgroundTile(tile),
+                        ...getBackgroundTile(tile, { row: row(), col: col(), tiles: tiles() }),
                       }}
                       onMouseOver={(ev) => {
                         if (Boolean(ev.buttons & 1) && selectedKey().type === "tile") {
