@@ -166,13 +166,13 @@ function isBlocked(index: number, direction: Direction, engine: Engine, checkEmp
     break;
   case Direction.Left:
     newIndex -= 1;
-    if (newIndex % engine.width == engine.width - 1) {
+    if (newIndex < 0 || newIndex % engine.width === engine.width - 1) {
       return { blocked: true, blockedBy: [] };
     }
     break;
   case Direction.Right:
     newIndex += 1;
-    if (newIndex % engine.width == 0) {
+    if (newIndex % engine.width === 0) {
       return { blocked: true, blockedBy: [] };
     }
     break;
@@ -614,13 +614,25 @@ export class LazyEye extends VoidEnemy {
   get facing() { return Direction.Down; }
 }
 
+function getMimicSuffix(mirrorLeftRight: boolean, mirrorUpDown: boolean): string {
+  if (mirrorLeftRight && mirrorUpDown) {
+    return "-vh";
+  } else if (!mirrorLeftRight && mirrorUpDown) {
+    return "-h";
+  } else if (mirrorLeftRight && !mirrorUpDown) {
+    return "-v";
+  } else {
+    return "";
+  }
+}
+
 export class Mimic extends VoidEnemy {
   mirrorLeftRight: boolean;
   mirrorUpDown: boolean;
   facing: Direction; 
 
   constructor(mirrorLeftRight: boolean, mirrorUpDown: boolean) {
-    super("mimic");
+    super("mimic" + getMimicSuffix(mirrorLeftRight, mirrorUpDown));
     this.mirrorLeftRight = mirrorLeftRight;
     this.mirrorUpDown = mirrorUpDown;
     this.facing = Direction.Down;
@@ -650,15 +662,15 @@ export class Mimic extends VoidEnemy {
     }
 
     if (
-      (!this.mirrorUpDown && playerChoice === PlayerChoice.Left) 
-    || (this.mirrorUpDown && playerChoice === PlayerChoice.Right)
+      (!this.mirrorLeftRight && playerChoice === PlayerChoice.Left) 
+    || (this.mirrorLeftRight && playerChoice === PlayerChoice.Right)
     ) {
       way = Direction.Left;
     }
 
     if (
-      (!this.mirrorUpDown && playerChoice === PlayerChoice.Right) 
-    || (this.mirrorUpDown && playerChoice === PlayerChoice.Left)
+      (!this.mirrorLeftRight && playerChoice === PlayerChoice.Right) 
+    || (this.mirrorLeftRight && playerChoice === PlayerChoice.Left)
     ) {
       way = Direction.Right;
     }
@@ -675,6 +687,10 @@ export class Mimic extends VoidEnemy {
       const player = result.blockedBy.find(entity => entity.entity.kind === "player");
       if (player !== undefined) {
         engine.kill(player, self);
+      }
+
+      if (result.blockedBy.some(entity => entity.entity.kind === "object")) {
+        engine.move(self, way);
       }
     } else {
       engine.move(self, way);
@@ -1203,7 +1219,7 @@ export class Engine {
       break;
     case Direction.Left:
       newIndex -= 1;
-      if (newIndex % this._width == this._width - 1) {
+      if (newIndex < 0 || newIndex % this._width == this._width - 1) {
         return;
       }
       break;

@@ -23,6 +23,7 @@ import {
   LazyEye,
   Leech,
   Maggot,
+  Mimic,
   NormalTile,
   PlayerChoice,
   RegisteredEntity,
@@ -59,6 +60,18 @@ import beaverUpImg from "../../../assets/tiles/beaver-up.png";
 import beaverDownImg from "../../../assets/tiles/beaver-down.png";
 import beaverLeftImg from "../../../assets/tiles/beaver-left.png";
 import beaverRightImg from "../../../assets/tiles/beaver-right.png";
+import mimicBlackDownImg from "../../../assets/tiles/mimic-black-down.png";
+import mimicBlackUpImg from "../../../assets/tiles/mimic-black-up.png";
+import mimicBlackLeftImg from "../../../assets/tiles/mimic-black-left.png";
+import mimicBlackRightImg from "../../../assets/tiles/mimic-black-right.png";
+import mimicWhiteDownImg from "../../../assets/tiles/mimic-white-down.png";
+import mimicWhiteUpImg from "../../../assets/tiles/mimic-white-up.png";
+import mimicWhiteLeftImg from "../../../assets/tiles/mimic-white-left.png";
+import mimicWhiteRightImg from "../../../assets/tiles/mimic-white-right.png";
+import mimicGreyDownImg from "../../../assets/tiles/mimic-grey-down.png";
+import mimicGreyUpImg from "../../../assets/tiles/mimic-grey-up.png";
+import mimicGreyLeftImg from "../../../assets/tiles/mimic-grey-left.png";
+import mimicGreyRightImg from "../../../assets/tiles/mimic-grey-right.png";
 
 const WIDTH = 14;
 
@@ -84,6 +97,10 @@ const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords
   ["Mu", { invoke: () => new Maggot(false), keywords: "maggot enemy left", name: "Maggot (U)" }],
   ["Md", { invoke: () => new Maggot(true), keywords: "maggot enemy right", name: "Leech (D)" }],
   ["B", { invoke: () => new Beaver(), keywords: "beaver enemy", name: "Beaver" }],
+  ["M", { invoke: () => new Mimic(false, false), keywords: "mimic enemy", name: "Mimic" }],
+  ["Mv", { invoke: () => new Mimic(true, false), keywords: "mimic enemy vertical", name: "Mimic (V)" }],
+  ["Mh", { invoke: () => new Mimic(false, true), keywords: "mimic enemy horizontal", name: "Mimic (H)" }],
+  ["Mvh", { invoke: () => new Mimic(true, true), keywords: "mimic enemy vertical horizontal", name: "Mimic (V/H)" }],
 ]);
 
 
@@ -105,32 +122,32 @@ function getBackgroundTile(tile: Tile, context?: { row: number, col: number, til
     return {
       "background-color": "white",
       "background-image": "url(" + floorImg + ")",
-      "background-size": "cover",
+      
     };
   case "stair":
     return {
       "background-image": "url(" + exitImg + ")",
-      "background-size": "cover",
+      
     };
   case "glass":
     return {
       "background-image": "url(" + glassImg + ")",
-      "background-size": "cover",
+      
     };
   case "damagedglass":
     return {
       "background-image": "url(" + damagedGlassImg + ")",
-      "background-size": "cover",
+      
     };
   case "bomb":
     return {
       "background-image": "url(" + bombImg + ")",
-      "background-size": "cover",
+      
     };
   case "explo":
     return {
       "background-image": "url(" + exploImg + ")",
-      "background-size": "cover",
+      
     };
   case "empty": {
     if (context === undefined) {
@@ -148,7 +165,7 @@ function getBackgroundTile(tile: Tile, context?: { row: number, col: number, til
     } else {
       return {
         "background-image": "url(" + floorRemovedImg + ")",
-        "background-size": "cover",
+        
       };
     }
   }
@@ -168,75 +185,75 @@ function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
   case "rock":
     return {
       "background-image": "url(" + boulderImg + ")",
-      "background-size": "cover",
+      
     };
 
   case "lazyeye":
     return {
       "background-image": "url(" + lazyEyeImg + ")",
-      "background-size": "cover",
+      
     };
   case "leech":
     if (entity.facing === Direction.Left) {
       return {
         "background-image": "url(" + leechLeftImg + ")",
-        "background-size": "cover",
+        
       };
     } else {
       return {
         "background-image": "url(" + leechRightImg + ")",
-        "background-size": "cover",
+        
       };
     }
   case "player":
     if (entity.facing === Direction.Down) {
       return {
         "background-image": "url(" + playerDownImg + ")",
-        "background-size": "cover",
+        
       };
     } else if (entity.facing === Direction.Up) {
       return {
         "background-image": "url(" + playerUpImg + ")",
-        "background-size": "cover",
+        
       };
     } else if (entity.facing === Direction.Left) {
       return {
         "background-image": "url(" + playerLeftImg + ")",
-        "background-size": "cover",
+        
       };
     } else {
       return {
         "background-image": "url(" + playerRightImg + ")",
-        "background-size": "cover",
+        
       };
     }
   case "smile":
     if (entity.facing === Direction.Left) {
       return {
         "background-image": "url(" + smileLeftImg + ")",
-        "background-size": "cover",
+        
       };
     } else if (entity.facing === Direction.Right) {
       return {
         "background-image": "url(" + smileRightImg + ")",
-        "background-size": "cover",
+        
       };
     } else {
       return {
         "background-image": "url(" + smileLeftImg + ")",
-        "background-size": "cover",
+        
       };
     }
   case "maggot":
     if (entity.facing === Direction.Up) {
       return {
         "background-image": "url(" + maggotUpImg + ")",
-        "background-size": "cover",
+        
       };
     } else {
       return {
         "background-image": "url(" + maggotDownImg + ")",
-        "background-size": "cover",
+        
       };
     }
 
@@ -244,24 +261,81 @@ function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
     if (entity.facing === Direction.Down) {
       return {
         "background-image": "url(" + beaverDownImg + ")",
-        "background-size": "cover",
+        
       };
     } else if (entity.facing === Direction.Up) {
       return {
         "background-image": "url(" + beaverUpImg + ")",
-        "background-size": "cover",
+        
       };
     } else if (entity.facing === Direction.Left) {
       return {
         "background-image": "url(" + beaverLeftImg + ")",
-        "background-size": "cover",
+        
       };
     } else {
       return {
         "background-image": "url(" + beaverRightImg + ")",
-        "background-size": "cover",
+        
       };
     }
+  case "mimic": // doesn't exist in the original game
+  case "mimic-v":
+    if (entity.facing === Direction.Down) {
+      return {
+        "background-image": "url(" + mimicWhiteDownImg + ")",
+      };
+    } else if (entity.facing === Direction.Up) {
+      return {
+        "background-image": "url(" + mimicWhiteUpImg + ")",
+      };
+    } else if (entity.facing === Direction.Left) {
+      return {
+        "background-image": "url(" + mimicWhiteLeftImg + ")",
+      };
+    } else {
+      return {
+        "background-image": "url(" + mimicWhiteRightImg + ")",
+      };
+    }
+  case "mimic-h":
+    if (entity.facing === Direction.Down) {
+      return {
+        "background-image": "url(" + mimicGreyDownImg + ")",
+      };
+    } else if (entity.facing === Direction.Up) {
+      return {
+        "background-image": "url(" + mimicGreyUpImg + ")",
+      };
+    } else if (entity.facing === Direction.Left) {
+      return {
+        "background-image": "url(" + mimicGreyLeftImg + ")",
+      };
+    } else {
+      return {
+        "background-image": "url(" + mimicGreyRightImg + ")",
+      };
+    }
+  case "mimic-vh":
+    if (entity.facing === Direction.Down) {
+      return {
+        "background-image": "url(" + mimicBlackDownImg + ")",
+      };
+    } else if (entity.facing === Direction.Up) {
+      return {
+        "background-image": "url(" + mimicBlackUpImg + ")",
+      };
+    } else if (entity.facing === Direction.Left) {
+      return {
+        "background-image": "url(" + mimicBlackLeftImg + ")",
+      };
+    } else {
+      return {
+        "background-image": "url(" + mimicBlackRightImg + ")",
+      };
+    }
+
+
   }
 
   return {};
@@ -390,6 +464,9 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
                       width: "60px",
                       height: "60px",
                       "image-rendering": "pixelated",
+                      "background-position-x": "center",
+                      "background-repeat": "no-repeat",
+                      "background-size": "contain",
                       ...getBackgroundTile(tile.tile, { row: row(), col: col(), tiles: engine.tiles.map(tile => tile.tile) }),
                     }}
                   >
@@ -398,6 +475,9 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
                         "font-size": "2em",
                         width: "100%",
                         height: "100%",
+                        "background-position-x": "center",
+                        "background-repeat": "no-repeat",
+                        "background-size": "contain",
                         ...getBackgroundEntity(
                           entitiesAt.map((entity) => entity.entity)
                         ),
@@ -533,6 +613,9 @@ export const VoidStrangerEditor: Component<{ tiles: string[], entities: string[]
                   "border-color": selected() ? "white" : "#333",
                   "opacity": selected() ? 1 : 0.5,
                   "image-rendering": "pixelated",
+                  "background-position-x": "center",
+                  "background-repeat": "no-repeat",
+                  "background-size": "contain",
                   ...getBackgroundTile(invoked),
                 }}
                 onClick={() => setSelectedKey({ key, type: "tile" })}
@@ -560,6 +643,9 @@ export const VoidStrangerEditor: Component<{ tiles: string[], entities: string[]
                   "border-color": selected() ? "white" : "#333",
                   "opacity": selected() ? 1 : 0.5,
                   "image-rendering": "pixelated",
+                  "background-position-x": "center",
+                  "background-repeat": "no-repeat",
+                  "background-size": "contain",
                   ...getBackgroundEntity(invoked ? [invoked] : []),
                 }}
                 onClick={() => setSelectedKey({ key, type: "entity" })}
@@ -595,6 +681,9 @@ export const VoidStrangerEditor: Component<{ tiles: string[], entities: string[]
                         border: "1px solid #ccc",
                         margin: "2px",
                         "image-rendering": "pixelated",
+                        "background-position-x": "center",
+                        "background-repeat": "no-repeat",
+                        "background-size": "contain",
                         ...getBackgroundTile(tile, { row: row(), col: col(), tiles: tiles() }),
                       }}
                       onMouseOver={(ev) => {
@@ -632,6 +721,9 @@ export const VoidStrangerEditor: Component<{ tiles: string[], entities: string[]
                           "font-size": "2em",
                           width: "100%",
                           height: "100%",
+                          "background-position-x": "center",
+                          "background-repeat": "no-repeat",
+                          "background-size": "contain",
                           ...getBackgroundEntity(entity ? [entity] : []),
                         }}
                       />
