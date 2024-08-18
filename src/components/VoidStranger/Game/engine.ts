@@ -998,6 +998,7 @@ export class Engine {
   private _width: number;
   private _height: number;
   private _stop: boolean;
+  private _started: boolean;
 
   public earlyTurnEnd: boolean;
 
@@ -1029,6 +1030,7 @@ export class Engine {
     this._forces = [];
     this._moves = [];
     this._stop = false;
+    this._started = false;
     this.earlyTurnEnd = false;
   }
 
@@ -1041,7 +1043,27 @@ export class Engine {
 
   generateId() { return ++this._lastId; }
 
+  start() {
+    for (const tile of this._elements.tiles) {
+      for (const entity of this._elements.entities[tile.index]) {
+        tile.tile.onEnter(tile, { engine: this, entity });
+      }
+    }
+
+    for (const entities of this._elements.entities) {
+      if (entities.length >= 2) {
+        entities.forEach(entity => entity.entity.onCollision(entity, { engine: this, entities }));
+      }
+    }
+
+    this._started = true;
+  }
+
   play(choice: PlayerChoice) {
+    if (!this._started) {
+      throw new Error("`start` not called");
+    }
+
     console.debug("Start of turn");
     console.debug("Player choice: %s", choice);
 

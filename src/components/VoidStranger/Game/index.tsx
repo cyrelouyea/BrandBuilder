@@ -237,6 +237,7 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
     case "r":
       try {
         engine = createEngine(props.entities, props.tiles);
+        engine.start();
       } catch (err) {
         alert(err);
         props.switchToEditor();
@@ -268,6 +269,7 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
   createEffect(() => {
     try {
       engine = createEngine(props.entities, props.tiles);
+      engine.start();
       setTiles([...engine.tiles]);
       setEntities([...engine.entities]);
     } catch (err) {
