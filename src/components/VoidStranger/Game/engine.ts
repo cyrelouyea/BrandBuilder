@@ -746,6 +746,7 @@ export class VoidPlayer extends AbstractEntity {
   stock: RegisteredTile[];
   numberOfVoids: number;
   numberOfSteps: number;
+  voidRodUsed: boolean;
   
 
   constructor() {
@@ -756,12 +757,14 @@ export class VoidPlayer extends AbstractEntity {
     this.stock = [];
     this.numberOfSteps = 0;
     this.numberOfVoids = 0;
+    this.voidRodUsed = true;
   }
 
   get isPushable() { return false; }
   get isObstacle() { return true; }
 
   onTurn(self: RegisteredEntity, { engine, playerChoice }: TurnEvent) {
+    this.voidRodUsed = false;
 
     const index = engine.getIndex(self.id);
 
@@ -799,6 +802,7 @@ export class VoidPlayer extends AbstractEntity {
         // place tile in stock in this empty space
         engine.transform(this.stock.pop()!.tile, targetIndex);
         this.numberOfVoids += 1;
+        this.voidRodUsed = true;
         return;
       }
 
@@ -806,6 +810,7 @@ export class VoidPlayer extends AbstractEntity {
         // take the tile if you don't stock any
         const { oldTile } = engine.transform(new EmptyTile(), targetIndex);
         this.numberOfVoids += 1;
+        this.voidRodUsed = true;
         this.stock.push(oldTile);
         return;
       }
@@ -955,6 +960,43 @@ export class Slower extends VoidObject {
 
 export class Watcher extends VoidObject { 
   constructor() { super("watcher"); }
+}
+
+export class WatcherManager extends VoidObject {
+  numberOfVoids: number;
+
+  constructor() { 
+    super("watcher-manager");
+    this.turns = [0.5];
+    this.numberOfVoids = 0;
+  }
+
+  onTurn(self: RegisteredEntity<Entity>, { engine }: TurnEvent): void {
+    let numberOfWatchers = 0;
+
+    for (const entities of engine.entities) {
+      for (const entity of entities) {
+        if (entity.entity.name === "watcher") {
+          numberOfWatchers += 1;
+        }
+      }
+    }
+
+    if (numberOfWatchers === 0) {
+      this.numberOfVoids = 0;
+      return;
+    }
+
+    const player = engine.getPlayer();
+
+    if (player.entity.voidRodUsed) {
+      this.numberOfVoids += 1;
+    }
+
+    if (this.numberOfVoids >= numberOfWatchers) {
+      engine.kill(player, self);
+    }
+  }
 }
 
 export class Atoner extends VoidObject { 

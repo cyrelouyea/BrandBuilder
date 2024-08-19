@@ -10,7 +10,7 @@ import {
   Switch,
   Match,
   Setter,
-  Index, Show,
+  Index,
 } from "solid-js";
 import {
   Beaver,
@@ -42,6 +42,8 @@ import {
   Tile,
   VoidPlayer,
   WallTile,
+  WatcherManager,
+  Watcher,
 } from "./engine";
 
 import floorRemovedImg from "../../../assets/tiles/floor-removed.png";
@@ -88,6 +90,8 @@ import slowerImg from "../../../assets/tiles/slower.png";
 import slowerStopImg from "../../../assets/tiles/slower-stop.png";
 import greederImg from "../../../assets/tiles/greeder.png";
 import killerImg from "../../../assets/tiles/killer.png";
+import watcherImg from "../../../assets/tiles/watcher.png";
+import watcherEyesImg from "../../../assets/tiles/watcher-eyes.png";
 
 
 import "./index.css";
@@ -125,6 +129,7 @@ const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords
   ["Sl", { invoke: () => new Slower(), keywords: "slower gor statue", name: "Slower" }],
   ["Gr", { invoke: () => new Greeder(), keywords: "greeder mon statue", name: "Greeder" }],
   ["Ki", { invoke: () => new Killer(), keywords: "killer tan statue", name: "Killer" }],
+  ["Wa", { invoke: () => new Watcher(), keywords: "watcher lev statue", name: "Watcher" }],
 ]);
 
 
@@ -217,7 +222,7 @@ function getBackgroundTile(tile: Tile, context?: { row: number, col: number, til
   }
 }
 
-function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
+function getBackgroundEntity(entities: Entity[], context?: { watcherCount: number, engine: Engine }): JSX.CSSProperties {
   if (entities.length === 0) {
     return {};
   }
@@ -383,6 +388,35 @@ function getBackgroundEntity(entities: Entity[]): JSX.CSSProperties {
     return {
       "background-image": "url(" + killerImg + ")",
     };
+  case "watcher": {
+    if (!context) {
+      return {
+        "background-image": "url(" + watcherImg + ")",
+      };
+    }
+
+    const manager = context.engine.managers.find((manager): manager is RegisteredEntity<WatcherManager> => 
+      manager.entity.name === "watcher-manager"
+    );
+
+    if (!manager) {
+      return {
+        "background-image": "url(" + watcherImg + ")",
+      };
+    }
+
+    if (manager.entity.numberOfVoids <= context.watcherCount) {
+      return {
+        "background-image": "url(" + watcherImg + ")",
+      };
+    }
+
+    return {
+      "background-image": "url(" + watcherEyesImg + ")",
+    };
+
+
+  }
   }
 
   return {};
@@ -395,7 +429,7 @@ function createEngine(entities: string[], tiles: string[]) {
       .map((chr) => ENTITIES_MAPPING.get(chr)!.invoke()),
     tiles: tiles
       .map((chr) => TILES_MAPPING.get(chr)!.invoke()),
-    managers: [new KillerManager(), new StairsManager()],
+    managers: [new KillerManager(), new StairsManager(), new WatcherManager()],
   });
 }
 
@@ -553,7 +587,15 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
                         "background-repeat": "no-repeat",
                         "background-size": "contain",
                         ...getBackgroundEntity(
-                          entitiesAt.map((entity) => entity.entity)
+                          entitiesAt.map((entity) => entity.entity),
+                          { 
+                            watcherCount: entities()
+                              .filter((_, index) => index < (row() * WIDTH) + col())
+                              .flat()
+                              .filter((entity) => entity.entity.name === "watcher")
+                              .length,
+                            engine
+                          }
                         ),
                       }}
                     />
