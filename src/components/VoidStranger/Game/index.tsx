@@ -10,7 +10,7 @@ import {
   Switch,
   Match,
   Setter,
-  Index,
+  Index, Show,
 } from "solid-js";
 import {
   Beaver,
@@ -426,6 +426,10 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
 
   const [tiles, setTiles] = createSignal<RegisteredTile[]>([]);
   const [entities, setEntities] = createSignal<RegisteredEntity[][]>([]);
+  const [debug, setDebug] = createSignal<boolean>(false);
+  const [numberOfTurns, setNumberOfTurns] = createSignal(0);
+  const [numberOfSteps, setNumberOfSteps] = createSignal(0);
+  const [numberOfVoids, setNumberOfVoids] = createSignal(0);
 
   const keypressHandler = (ev: KeyboardEvent) => {
     switch (ev.key) {
@@ -461,12 +465,18 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
         return;
       }
       break;
+    case "F2":
+      setDebug(prev => !prev);
+      break;
     default:
       return;
     }
 
     setTiles([...engine.tiles]);
     setEntities([...engine.entities]);
+    setNumberOfVoids(engine.numberOfVoids);
+    setNumberOfSteps(engine.numberOfSteps);
+    setNumberOfTurns(engine.numberOfTurns);
   };
 
   onMount(() => {
@@ -483,6 +493,9 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
       engine.start();
       setTiles([...engine.tiles]);
       setEntities([...engine.entities]);
+      setNumberOfVoids(engine.numberOfVoids);
+      setNumberOfSteps(engine.numberOfSteps);
+      setNumberOfTurns(engine.numberOfTurns);
     } catch (err) {
       alert(err);
       props.switchToEditor();
@@ -500,6 +513,19 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
         height: "100%",
       }}
     >
+      <div style={{display: "flex", gap: "1em", visibility: debug() ? "hidden": "visible"}}>
+        <div style={{"color":"white", "font-size": "1.5em", padding: "1em"}}>
+        T-<strong>{numberOfTurns().toString(10).padStart(5, "0")}</strong>
+        </div>
+
+        <div style={{"color":"white", "font-size": "1.5em", padding: "1em"}}>
+        S-<strong>{numberOfSteps().toString(10).padStart(5, "0")}</strong>
+        </div>
+
+        <div style={{"color":"white", "font-size": "1.5em", padding: "1em"}}>
+        V-<strong>{numberOfVoids().toString(10).padStart(5, "0")}</strong>
+        </div>
+      </div>
       <div style={{ display: "flex", "flex-direction": "column" }}>
         <For each={Array.from(chunk(zip(tiles(), entities()), WIDTH))}>
           {(chunk, row) => (

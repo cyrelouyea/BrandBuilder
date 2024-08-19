@@ -262,16 +262,6 @@ export class StairsTile extends AbstractTile {
   constructor() {
     super("stairs");
   }
-
-  onEnter(self: RegisteredTile<Tile>, { engine, entity }: EnterEvent): void {
-    const manager = engine.managers.find((manager): manager is RegisteredEntity<StairsManager> => 
-      manager.entity.name === "stairs-manager"
-    );
-
-    if ((!manager || !manager.entity.closed) && entity.entity.kind === "player") {
-      engine.end();
-    }
-  }
 }
 
 export class SwitchTile extends AbstractTile { 
@@ -754,6 +744,9 @@ export class VoidPlayer extends AbstractEntity {
   turns: number[];
   facing: Direction;
   stock: RegisteredTile[];
+  numberOfVoids: number;
+  numberOfSteps: number;
+  
 
   constructor() {
     super("player", "player");
@@ -761,12 +754,15 @@ export class VoidPlayer extends AbstractEntity {
     this.facing = Direction.Down;
     this.turns = [0];
     this.stock = [];
+    this.numberOfSteps = 0;
+    this.numberOfVoids = 0;
   }
 
   get isPushable() { return false; }
   get isObstacle() { return true; }
 
   onTurn(self: RegisteredEntity, { engine, playerChoice }: TurnEvent) {
+
     const index = engine.getIndex(self.id);
 
     if (index === undefined) {
@@ -785,7 +781,7 @@ export class VoidPlayer extends AbstractEntity {
 
       if (row < 0 || row >= engine.height || col < 0 || col >= engine.width) {
         // can't stock out of screen tiles
-        engine.earlyTurnEnd = true;
+        engine.cancelTurn = true;
         return ;
       }
 
@@ -793,7 +789,7 @@ export class VoidPlayer extends AbstractEntity {
 
       if (engine.getEntitiesAt(targetIndex).length > 0) {
         // can't stock tile with entities on it
-        engine.earlyTurnEnd = true;
+        engine.cancelTurn = true;
         return;
       }
 
@@ -802,17 +798,19 @@ export class VoidPlayer extends AbstractEntity {
       if (tile.tile.name === "empty" && this.stock.length > 0) {
         // place tile in stock in this empty space
         engine.transform(this.stock.pop()!.tile, targetIndex);
+        this.numberOfVoids += 1;
         return;
       }
 
       if (tile.tile.name !== "empty" && !tile.tile.isObstacle && this.stock.length === 0) {
         // take the tile if you don't stock any
         const { oldTile } = engine.transform(new EmptyTile(), targetIndex);
+        this.numberOfVoids += 1;
         this.stock.push(oldTile);
         return;
       }
 
-      engine.earlyTurnEnd = true;
+      engine.cancelTurn = true;
       return;
     }
 
@@ -838,6 +836,7 @@ export class VoidPlayer extends AbstractEntity {
     } 
 
     engine.move(self, direction);
+    this.numberOfSteps += 1;
   }
 
   onDeath(self: RegisteredEntity, { engine }: DeathEvent): void {
@@ -993,6 +992,20 @@ export class StairsManager extends VoidObject {
     this._closed = !engine.tiles
       .filter(tile => tile.tile.name === "switch")
       .every(tile => engine.getEntitiesAt(tile.index).length > 0);
+
+    if (this._closed) {
+      return;
+    }
+
+    const playerIndex = engine.getIndex(player.id);
+
+    if (playerIndex === undefined) {
+      return;
+    }
+
+    if (engine.tiles[playerIndex].tile.name === "stairs") {
+      engine.end();
+    }
   }
 }
 
@@ -1125,7 +1138,11 @@ export class Engine {
   private _stop: boolean;
   private _started: boolean;
 
-  public earlyTurnEnd: boolean;
+  private _numberOfTurns: number;
+  private _numberOfSteps: number;
+  private _numberOfVoids: number;
+
+  public cancelTurn: boolean;
 
   constructor(attrs: { tiles: Tile[], entities: (Entity | null)[], managers: Entity[], width: number }) {
     if (attrs.width <= 0) {
@@ -1157,7 +1174,10 @@ export class Engine {
     this._moves = [];
     this._stop = false;
     this._started = false;
-    this.earlyTurnEnd = false;
+    this._numberOfTurns = 0;
+    this._numberOfSteps = 0;
+    this._numberOfVoids = 0;
+    this.cancelTurn = false;
   }
 
   get width(): number { return this._width; }
@@ -1166,7 +1186,10 @@ export class Engine {
   get tiles() { return this._elements.tiles; }
   get entities() { return this._elements.entities; }
   get managers() { return this._elements.managers; }
-
+  
+  get numberOfTurns() { return this._numberOfTurns; }
+  get numberOfSteps() { return this._elements.player.entity.numberOfSteps; }
+  get numberOfVoids() { return this._elements.player.entity.numberOfVoids; }
 
   generateId() { return ++this._lastId; }
 
@@ -1194,7 +1217,6 @@ export class Engine {
       manager.entity.onStart(manager, { engine: this });
     }
 
-
     this._started = true;
   }
 
@@ -1217,9 +1239,9 @@ export class Engine {
       .flat()
       .sort(({ turn: a }, { turn: b }) => a - b);
 
-    this.earlyTurnEnd = false;
+    this.cancelTurn = false;
 
-    while (!this._stop && !this.earlyTurnEnd) {
+    while (!this._stop && !this.cancelTurn) {
       let entityAndTurn = sortedEntities.shift();
 
       if (entityAndTurn === undefined) {
@@ -1244,6 +1266,10 @@ export class Engine {
       console.debug("End of turn %s %s", currentTurn, this._stop);
     }
     
+    if (!this.cancelTurn) {
+      this._numberOfTurns += 1;
+    }
+
     console.debug("End of turn");
 
     return this._stop;
