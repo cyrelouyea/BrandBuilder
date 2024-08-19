@@ -32,7 +32,6 @@ import {
   NormalTile,
   PlayerChoice,
   RegisteredEntity,
-  RegisteredTile,
   Rock,
   Slower,
   Smile,
@@ -44,6 +43,8 @@ import {
   WallTile,
   WatcherManager,
   Watcher,
+  CopyManager,
+  CopyTile,
 } from "./engine";
 
 import floorRemovedImg from "../../../assets/tiles/floor-removed.png";
@@ -55,6 +56,7 @@ import damagedGlassImg from "../../../assets/tiles/damagedglass.png";
 import bombImg from "../../../assets/tiles/bomb.png";
 import exploImg from "../../../assets/tiles/explo.png";
 import switchImg from "../../../assets/tiles/switch.png";
+import copyImg from "../../../assets/tiles/copy.png";
 
 import boulderImg from "../../../assets/tiles/boulder.png";
 import leechLeftImg from "../../../assets/tiles/leech-left.png";
@@ -84,6 +86,10 @@ import mimicGreyDownImg from "../../../assets/tiles/mimic-grey-down.png";
 import mimicGreyUpImg from "../../../assets/tiles/mimic-grey-up.png";
 import mimicGreyLeftImg from "../../../assets/tiles/mimic-grey-left.png";
 import mimicGreyRightImg from "../../../assets/tiles/mimic-grey-right.png";
+import shadeDownImg from "../../../assets/tiles/shade-down.png";
+import shadeUpImg from "../../../assets/tiles/shade-up.png";
+import shadeRightImg from "../../../assets/tiles/shade-right.png";
+import shadeLeftImg from "../../../assets/tiles/shade-left.png";
 
 import loverImg from "../../../assets/tiles/lover.png";
 import slowerImg from "../../../assets/tiles/slower.png";
@@ -107,7 +113,8 @@ const TILES_MAPPING = new Map<string, { invoke: () => Tile, keywords: string, na
   ["G", { invoke: () => new GlassTile(), keywords: "glass ice", name: "Glass" }],
   ["B", { invoke: () => new BombTile(), keywords: "bomb explo", name: "Bomb" }],
   ["Be", { invoke: () => new ExploTile(), keywords: "bomb explo", name: "Explo" }],
-  ["S", { invoke: () => new SwitchTile(), keywords: "switch button", name: "Switch" }]
+  ["S", { invoke: () => new SwitchTile(), keywords: "switch button", name: "Switch" }],
+  ["C", { invoke: () => new CopyTile(), keywords: "copy shade", name: "Copy" }],
 ]);
 
 const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords: string, name: string }>([
@@ -212,11 +219,14 @@ function getBackgroundTile(tile: Tile, context?: { row: number, col: number, til
       };
     }
   }
-  case "switch": {
+  case "switch": 
     return {
       "background-image": "url(" + switchImg + ")",
     };
-  }
+  case "copy": 
+    return {
+      "background-image": "url(" + copyImg + ")",
+    };
   default:
     return {};
   }
@@ -366,6 +376,24 @@ function getBackgroundEntity(entities: Entity[], context?: { watcherCount: numbe
         "background-image": "url(" + mimicBlackRightImg + ")",
       };
     }
+  case "shade":
+    if (entity.facing === Direction.Down) {
+      return {
+        "background-image": "url(" + shadeDownImg + ")",
+      };
+    } else if (entity.facing === Direction.Up) {
+      return {
+        "background-image": "url(" + shadeUpImg + ")",
+      };
+    } else if (entity.facing === Direction.Left) {
+      return {
+        "background-image": "url(" + shadeLeftImg + ")",
+      };
+    } else {
+      return {
+        "background-image": "url(" + shadeRightImg + ")",
+      };
+    }
   case "lover":
     return {
       "background-image": "url(" + loverImg + ")",
@@ -414,8 +442,6 @@ function getBackgroundEntity(entities: Entity[], context?: { watcherCount: numbe
     return {
       "background-image": "url(" + watcherEyesImg + ")",
     };
-
-
   }
   }
 
@@ -429,7 +455,7 @@ function createEngine(entities: string[], tiles: string[]) {
       .map((chr) => ENTITIES_MAPPING.get(chr)!.invoke()),
     tiles: tiles
       .map((chr) => TILES_MAPPING.get(chr)!.invoke()),
-    managers: [new KillerManager(), new StairsManager(), new WatcherManager()],
+    managers: [new KillerManager(), new StairsManager(), new WatcherManager(), new CopyManager()],
   });
 }
 
@@ -458,7 +484,7 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
   let engine: Engine;
 
 
-  const [tiles, setTiles] = createSignal<RegisteredTile[]>([]);
+  const [tiles, setTiles] = createSignal<Tile[]>([]);
   const [entities, setEntities] = createSignal<RegisteredEntity[][]>([]);
   const [debug, setDebug] = createSignal<boolean>(false);
   const [numberOfTurns, setNumberOfTurns] = createSignal(0);
@@ -575,7 +601,7 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
                       "background-position-x": "center",
                       "background-repeat": "no-repeat",
                       "background-size": "contain",
-                      ...getBackgroundTile(tile.tile, { row: row(), col: col(), tiles: engine.tiles.map(tile => tile.tile), engine }),
+                      ...getBackgroundTile(tile, { row: row(), col: col(), tiles: engine.tiles, engine }),
                     }}
                   >
                     <div
