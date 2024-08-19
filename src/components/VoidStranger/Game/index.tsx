@@ -36,7 +36,9 @@ import {
   Rock,
   Slower,
   Smile,
-  Stair,
+  StairsTile,
+  StairsManager,
+  SwitchTile,
   Tile,
   VoidPlayer,
   WallTile,
@@ -44,11 +46,13 @@ import {
 
 import floorRemovedImg from "../../../assets/tiles/floor-removed.png";
 import exitImg from "../../../assets/tiles/exit.png";
+import exitClosedImg from "../../../assets/tiles/exit-closed.png";
 import floorImg from "../../../assets/tiles/floor.png";
 import glassImg from "../../../assets/tiles/glass.png";
 import damagedGlassImg from "../../../assets/tiles/damagedglass.png";
 import bombImg from "../../../assets/tiles/bomb.png";
 import exploImg from "../../../assets/tiles/explo.png";
+import switchImg from "../../../assets/tiles/switch.png";
 
 import boulderImg from "../../../assets/tiles/boulder.png";
 import leechLeftImg from "../../../assets/tiles/leech-left.png";
@@ -94,11 +98,12 @@ const WIDTH = 14;
 const TILES_MAPPING = new Map<string, { invoke: () => Tile, keywords: string, name: string }>([
   ["W", { invoke: () => new WallTile(), keywords: "wall obstacle blocking", name: "Wall" }],
   [".", { invoke: () => new NormalTile(), keywords: "normal", name: "Normal"  }],
-  ["E", { invoke: () => new Stair(), keywords: "hole space empty", name: "Stairs" }],
-  [" ", { invoke: () => new EmptyTile(), keywords: "stairs exit", name: "Hole" }],
+  ["E", { invoke: () => new StairsTile(), keywords: "stairs exit", name: "Stairs" }],
+  [" ", { invoke: () => new EmptyTile(), keywords: "hole space empty", name: "Hole" }],
   ["G", { invoke: () => new GlassTile(), keywords: "glass ice", name: "Glass" }],
   ["B", { invoke: () => new BombTile(), keywords: "bomb explo", name: "Bomb" }],
   ["Be", { invoke: () => new ExploTile(), keywords: "bomb explo", name: "Explo" }],
+  ["S", { invoke: () => new SwitchTile(), keywords: "switch button", name: "Switch" }]
 ]);
 
 const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords: string, name: string }>([
@@ -133,7 +138,7 @@ function* chunk<T>(array: T[], size: number): IterableIterator<T[]> {
   }
 }
 
-function getBackgroundTile(tile: Tile, context?: { row: number, col: number, tiles: Tile[] }): JSX.CSSProperties {
+function getBackgroundTile(tile: Tile, context?: { row: number, col: number, tiles: Tile[], engine?: Engine }): JSX.CSSProperties {
   switch (tile.name) {
   case "wall":
     return { "background-color": "#333" };
@@ -143,11 +148,27 @@ function getBackgroundTile(tile: Tile, context?: { row: number, col: number, til
       "background-image": "url(" + floorImg + ")",
       
     };
-  case "stair":
-    return {
-      "background-image": "url(" + exitImg + ")",
-      
-    };
+  case "stairs": {
+    if (!context) {
+      return {
+        "background-image": "url(" + exitImg + ")",
+      };
+    }
+    
+    const manager = context.engine?.managers.find((manager): manager is RegisteredEntity<StairsManager> => 
+      manager.entity.name === "stairs-manager"
+    );
+
+    if (!manager || !manager.entity.closed) {
+      return {
+        "background-image": "url(" + exitImg + ")",
+      };
+    } else {
+      return {
+        "background-image": "url(" + exitClosedImg + ")",
+      };
+    }
+  }
   case "glass":
     return {
       "background-image": "url(" + glassImg + ")",
@@ -161,7 +182,6 @@ function getBackgroundTile(tile: Tile, context?: { row: number, col: number, til
   case "bomb":
     return {
       "background-image": "url(" + bombImg + ")",
-      
     };
   case "explo":
     return {
@@ -184,9 +204,13 @@ function getBackgroundTile(tile: Tile, context?: { row: number, col: number, til
     } else {
       return {
         "background-image": "url(" + floorRemovedImg + ")",
-        
       };
     }
+  }
+  case "switch": {
+    return {
+      "background-image": "url(" + switchImg + ")",
+    };
   }
   default:
     return {};
@@ -371,7 +395,7 @@ function createEngine(entities: string[], tiles: string[]) {
       .map((chr) => ENTITIES_MAPPING.get(chr)!.invoke()),
     tiles: tiles
       .map((chr) => TILES_MAPPING.get(chr)!.invoke()),
-    managers: [new KillerManager()],
+    managers: [new KillerManager(), new StairsManager()],
   });
 }
 
@@ -491,7 +515,7 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
                       "background-position-x": "center",
                       "background-repeat": "no-repeat",
                       "background-size": "contain",
-                      ...getBackgroundTile(tile.tile, { row: row(), col: col(), tiles: engine.tiles.map(tile => tile.tile) }),
+                      ...getBackgroundTile(tile.tile, { row: row(), col: col(), tiles: engine.tiles.map(tile => tile.tile), engine }),
                     }}
                   >
                     <div

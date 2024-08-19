@@ -28,6 +28,8 @@ export interface LeaveEvent extends CommonEvent {
   transformed?: boolean;
 }
 
+export interface StartEvent extends CommonEvent {}
+
 export interface TurnEvent extends CommonEvent {
   playerChoice: PlayerChoice
 }
@@ -63,6 +65,7 @@ export interface Entity {
   turns: number[];
   isPushable: boolean;
   isObstacle: boolean;
+  onStart: (self: RegisteredEntity, event: StartEvent) => void;
   onTurn: (self: RegisteredEntity, event: TurnEvent) => void;
   onPush: (self: RegisteredEntity, event: PushEvent) => void;
   onFall: (self: RegisteredEntity, event: FallEvent) => void;
@@ -254,15 +257,47 @@ export class WallTile extends AbstractTile {
   }
 }
 
-export class Stair extends AbstractTile { 
+export class StairsTile extends AbstractTile { 
+
   constructor() {
-    super("stair");
+    super("stairs");
+  }
+
+  onEnter(self: RegisteredTile<Tile>, { engine, entity }: EnterEvent): void {
+    const manager = engine.managers.find((manager): manager is RegisteredEntity<StairsManager> => 
+      manager.entity.name === "stairs-manager"
+    );
+
+    if ((!manager || !manager.entity.closed) && entity.entity.kind === "player") {
+      engine.end();
+    }
   }
 }
 
 export class SwitchTile extends AbstractTile { 
   constructor() {
     super("switch");
+  }
+
+  onEnter(self: RegisteredTile<Tile>, { engine }: EnterEvent): void {
+    this.check(engine);
+  }
+
+  onLeave(self: RegisteredTile<Tile>, { engine }: EnterEvent): void {
+    this.check(engine);
+  }
+
+  check(engine: Engine) {
+    let manager = engine.managers
+      .find((manager): manager is RegisteredEntity<StairsManager> => 
+        manager.entity.name === "stairs-manager"
+      );
+
+    if (manager === undefined) {
+      return;
+    }
+    
+    manager.entity.check(engine);
   }
 }
 
@@ -385,6 +420,7 @@ abstract class AbstractEntity implements Entity {
   get name(): string { return this._name; }
   get kind(): string { return this._kind; }
 
+  onStart(self: RegisteredEntity, event: StartEvent) { }
   onTurn(self: RegisteredEntity, event: TurnEvent) { }
   onFall(self: RegisteredEntity, { engine }: FallEvent) { 
     engine.kill(self);
@@ -870,7 +906,15 @@ export class KillerManager extends VoidObject {
     this.activated = false;
   }
 
+  onStart(self: RegisteredEntity<Entity>, { engine }: StartEvent) {
+    this.check(engine);
+  }
+
   onTurn(self: RegisteredEntity<Entity>, { engine }: TurnEvent): void {
+    this.check(engine);
+  }
+
+  private check(engine: Engine) {
     if (this.activated) {
       return;
     }
@@ -918,6 +962,39 @@ export class Atoner extends VoidObject {
   constructor() { super("atoner"); }
 }
 
+
+export class StairsManager extends VoidObject {
+  private _closed: boolean;
+
+  constructor() { 
+    super("stairs-manager"); 
+    this._closed = true;
+    this.turns = [1];
+  }
+
+  get closed() { return this._closed; }
+
+  onStart(self: RegisteredEntity<Entity>, { engine }: StartEvent): void {
+    this.check(engine);
+  }
+
+  onTurn(self: RegisteredEntity<Entity>, { engine }: TurnEvent): void {
+    this.check(engine);
+  }
+
+  check(engine: Engine) {
+    const player = engine.getPlayer();
+
+    if (player.entity.stock.some(tile => tile.tile.name === "switch")) {
+      this._closed = true;
+      return;
+    }
+
+    this._closed = !engine.tiles
+      .filter(tile => tile.tile.name === "switch")
+      .every(tile => engine.getEntitiesAt(tile.index).length > 0);
+  }
+}
 
 
 export interface SetTileResult {
@@ -1088,6 +1165,7 @@ export class Engine {
   get maxIndex(): number { return this._width * this._height; }
   get tiles() { return this._elements.tiles; }
   get entities() { return this._elements.entities; }
+  get managers() { return this._elements.managers; }
 
 
   generateId() { return ++this._lastId; }
@@ -1104,6 +1182,18 @@ export class Engine {
         entities.forEach(entity => entity.entity.onCollision(entity, { engine: this, entities }));
       }
     }
+
+    for (const entities of this._elements.entities) {
+      for (const entity of entities) {
+        entity.entity.onStart(entity, { engine: this });
+      }
+    }
+
+
+    for (const manager of this._elements.managers) {
+      manager.entity.onStart(manager, { engine: this });
+    }
+
 
     this._started = true;
   }
