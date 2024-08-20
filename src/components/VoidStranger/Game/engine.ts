@@ -28,6 +28,10 @@ export interface LeaveEvent extends CommonEvent {
   transformed?: boolean;
 }
 
+export interface StayEvent extends CommonEvent {
+  entity: RegisteredEntity;
+}
+
 export interface StartEvent extends CommonEvent {}
 
 export interface TurnEvent extends CommonEvent {
@@ -57,6 +61,7 @@ export interface Tile {
   isObstacle: boolean;
   onEnter: (index: number, event: EnterEvent) => void;
   onLeave: (index: number, event: LeaveEvent) => void;
+  onStay: (index: number, event: StayEvent) => void;
 }
 
 export interface Entity {
@@ -66,6 +71,7 @@ export interface Entity {
   turns: number[];
   isPushable: boolean;
   isObstacle: boolean;
+  canFall: boolean;
   onStart: (self: RegisteredEntity, event: StartEvent) => void;
   onTurn: (self: RegisteredEntity, event: TurnEvent) => void;
   onPush: (self: RegisteredEntity, event: PushEvent) => void;
@@ -86,8 +92,8 @@ function isInSight(engine: Engine, from: number, to: number, way: number, static
     let index = engine.getPositionToIndex({ row, col });
 
     if (
-      engine.getTileAt(index).isObstacle || 
-      engine.getEntitiesAt(index).length > 0
+      engine.tiles[index].isObstacle || 
+      engine.entities[index].length > 0
     ) {
       return false;
     }
@@ -122,19 +128,19 @@ function getAdjacentTiles(engine: Engine, index: number): { tile: Tile, index: n
   const tiles: { tile: Tile, index: number }[] = [];
 
   if (index % engine.width !== 0) {
-    tiles.push({ tile: engine.getTileAt(index - 1), index: index - 1 });
+    tiles.push({ tile: engine.tiles[index - 1], index: index - 1 });
   }
 
   if (index % engine.width !== engine.width - 1) {
-    tiles.push({ tile: engine.getTileAt(index + 1), index: index + 1 });
+    tiles.push({ tile: engine.tiles[index + 1], index: index + 1 });
   }
 
   if (index + engine.width < engine.width * engine.height) {
-    tiles.push({ tile: engine.getTileAt(index + engine.width), index: index + engine.width });
+    tiles.push({ tile: engine.tiles[index + engine.width], index: index + engine.width });
   }
 
   if (index - engine.width >= 0) {
-    tiles.push({ tile: engine.getTileAt(index - engine.width), index: index - engine.width });
+    tiles.push({ tile: engine.tiles[index - engine.width], index: index - engine.width });
   }
 
   return tiles;
@@ -179,15 +185,15 @@ function isBlocked(index: number, direction: Direction, engine: Engine, checkEmp
     break;
   }
 
-  const tile = engine.getTileAt(newIndex);
+  const tile = engine.tiles[newIndex];
 
   if (tile.isObstacle || (checkEmpty && tile.name === "empty")) {
     return { blocked: true, blockedBy: [] };
   }
 
-  const entities = engine.getEntitiesAt(newIndex);
+  const entities = engine.entities[newIndex];
 
-  if (engine.getEntitiesAt(newIndex).length > 0) {
+  if (engine.entities[newIndex].length > 0) {
     return { blocked: true, blockedBy: entities };
   }
 
@@ -214,6 +220,7 @@ export abstract class AbstractTile implements Tile {
 
   onEnter(index:number, event: EnterEvent) { return; }
   onLeave(index:number, event: LeaveEvent) { return; }
+  onStay(index: number, event: StayEvent) { return; }
 
   get isObstacle(): boolean { return false; }
   get name(): string { return this._name; }
@@ -227,6 +234,10 @@ export class EmptyTile extends AbstractTile {
   onEnter(index: number, { engine, entity }: EnterEvent): void {
     entity.entity.onFall(entity, { engine });
   }
+
+  onStay(index: number, { engine, entity }: EnterEvent): void {
+    entity.entity.onFall(entity, { engine });
+  }
 }
 
 export class NormalTile extends AbstractTile {
@@ -234,6 +245,13 @@ export class NormalTile extends AbstractTile {
     super("normal");
   }
 }
+
+export class WhiteTile extends AbstractTile {
+  constructor() {
+    super("white");
+  }
+}
+
 
 export class WallTile extends AbstractTile {
   constructor() {
@@ -289,7 +307,7 @@ export class GlassTile extends AbstractTile {
   }
 
   onEnter(index: number, { engine }: EnterEvent) { 
-    if (engine.getEntitiesAt(index).length === 1) {
+    if (engine.entities[index].length === 1) {
       engine.transform(new DamagedGlassTile(), index);
     }
   }
@@ -301,7 +319,7 @@ export class DamagedGlassTile extends AbstractTile {
   }
 
   onLeave(index: number, { engine }: LeaveEvent) {
-    if (engine.getEntitiesAt(index).length === 0) {
+    if (engine.entities[index].length === 0) {
       engine.transform(new EmptyTile(), index);
     }
   }
@@ -313,7 +331,7 @@ export class BombTile extends AbstractTile {
   }
 
   onEnter(index: number, { engine }: EnterEvent) {
-    if (engine.getEntitiesAt(index).length === 1) {
+    if (engine.entities[index].length === 1) {
       engine.transform(new ExploTile(), index);
     }
   }
@@ -329,11 +347,11 @@ export class ExploTile extends AbstractTile {
       return;
     }
 
-    if (engine.getEntitiesAt(index).length > 1) {
+    if (engine.entities[index].length > 1) {
       return;
     }
 
-    const tilesStack = [{ tile: engine.getTileAt(index), index: index }];
+    const tilesStack = [{ tile: engine.tiles[index], index: index }];
     const discoveredIndices = new Set([index]);
 
     while (tilesStack.length > 0) {
@@ -379,7 +397,24 @@ export class CopyTile extends AbstractTile {
       this.lastLeft = entity;
     }
   }
+}
 
+export class VoidRodTile extends AbstractTile {
+  constructor() {
+    super("rod");
+  }
+}
+
+export class VoidSwordTile extends AbstractTile {
+  constructor() {
+    super("sword");
+  }
+}
+
+export class VoidWingsTile extends AbstractTile {
+  constructor() {
+    super("wings");
+  }
 }
 
 
@@ -396,6 +431,7 @@ abstract class AbstractEntity implements Entity {
   abstract get isObstacle(): boolean;
   abstract get turns(): number[];
   abstract get facing(): Direction;
+  get canFall() { return true; }
 
   get name(): string { return this._name; }
   get kind(): string { return this._kind; }
@@ -533,7 +569,7 @@ export class Smile extends VoidEnemy {
       return;
     }
 
-    const playerIndex = engine.getIndex(engine.getPlayer().id);
+    const playerIndex = engine.getIndex(engine.player.id);
 
     if (playerIndex === undefined) {
       return;
@@ -587,7 +623,7 @@ export class Beaver extends VoidEnemy {
     }
 
     if (this.charging === null) {
-      const playerIndex = engine.getIndex(engine.getPlayer().id);
+      const playerIndex = engine.getIndex(engine.player.id);
   
       if (playerIndex === undefined) {
         return;
@@ -608,8 +644,6 @@ export class Beaver extends VoidEnemy {
 
 
     const result = isBlocked(index, this.charging, engine);
-
-    console.log(result);
 
     if (result.blocked) {
       const player = result.blockedBy.find(entity => 
@@ -739,7 +773,7 @@ class Shade extends VoidEnemy {
 
 
   onTurn(self: RegisteredEntity<Entity>, { engine, turn }: TurnEvent): void {
-    const player = engine.getPlayer();
+    const player = engine.player;
     const playerIndex = engine.getIndex(player.id);
 
     if (turn === -0.5) {
@@ -765,7 +799,7 @@ class Shade extends VoidEnemy {
   }
 
   onDeath(self: RegisteredEntity, { engine }: DeathEvent): void {
-    engine.kill(engine.getPlayer(), self);
+    engine.kill(engine.player, self);
   }
 }
 
@@ -776,21 +810,35 @@ export class VoidPlayer extends AbstractEntity {
   numberOfVoids: number;
   numberOfSteps: number;
   voidRodUsed: boolean;
+  voidSwordUsed: boolean;
+  wingsUsed: number;
   
-
   constructor() {
     super("player", "player");
-
     this.facing = Direction.Down;
     this.turns = [0];
     this.stock = [];
     this.numberOfSteps = 0;
     this.numberOfVoids = 0;
-    this.voidRodUsed = true;
+    this.voidRodUsed = false;
+    this.voidSwordUsed = false;
+    this.wingsUsed = 0;
   }
 
   get isPushable() { return false; }
   get isObstacle() { return true; }
+
+  hasVoidRod(engine: Engine): boolean {
+    return engine.getTiles({ name: "rod" }).length > 0;
+  }
+
+  hasVoidSword(engine: Engine): boolean {
+    return engine.getTiles({ name: "sword" }).length > 0;
+  }
+
+  numberOfVoidWings(engine: Engine): number {
+    return engine.getTiles({ name: "wings" }).length;
+  }
 
   onTurn(self: RegisteredEntity, { engine, playerChoice }: TurnEvent) {
     this.voidRodUsed = false;
@@ -799,6 +847,10 @@ export class VoidPlayer extends AbstractEntity {
 
     if (index === undefined) {
       return;
+    }
+
+    if (engine.tiles[index].name !== "empty") {
+      this.wingsUsed = 0;
     }
 
     if (playerChoice === PlayerChoice.Action) {
@@ -819,15 +871,25 @@ export class VoidPlayer extends AbstractEntity {
 
       const targetIndex = engine.getPositionToIndex({ row, col });
 
-      if (engine.getEntitiesAt(targetIndex).length > 0) {
-        // can't stock tile with entities on it
+      const entities = engine.entities[targetIndex];
+      
+      if (entities.length > 0) {
+        if (this.hasVoidSword(engine)) {
+          const enemies = entities.filter(entity => entity.entity.kind === "enemy");
+          if (enemies.length > 0) {
+            this.voidSwordUsed = true;
+            enemies.forEach(enemy => engine.kill(enemy, self));
+            return;
+          }
+        }
+
         engine.cancelTurn = true;
         return;
       }
 
-      const tile = engine.getTileAt(targetIndex);
+      const tile = engine.tiles[targetIndex];
 
-      if (tile.name === "empty" && this.stock.length > 0) {
+      if (tile.name === "empty" && this.stock.length > 0 && this.hasVoidRod(engine)) {
         // place tile in stock in this empty space
         engine.transform(this.stock.pop()!, targetIndex);
         this.numberOfVoids += 1;
@@ -835,7 +897,7 @@ export class VoidPlayer extends AbstractEntity {
         return;
       }
 
-      if (tile.name !== "empty" && !tile.isObstacle && this.stock.length === 0) {
+      if (tile.name !== "empty" && !tile.isObstacle && this.stock.length === 0 && this.hasVoidRod(engine)) {
         // take the tile if you don't stock any
         const { oldTile } = engine.transform(new EmptyTile(), targetIndex);
         this.numberOfVoids += 1;
@@ -871,6 +933,14 @@ export class VoidPlayer extends AbstractEntity {
 
     engine.move(self, direction);
     this.numberOfSteps += 1;
+  }
+
+  onFall(self: RegisteredEntity<Entity>, { engine }: FallEvent): void {
+    this.wingsUsed += 1;
+
+    if (this.wingsUsed > this.numberOfVoidWings(engine)) {
+      super.onFall(self, { engine });
+    }
   }
 
   onDeath(self: RegisteredEntity, { engine }: DeathEvent): void {
@@ -911,7 +981,7 @@ export class Greeder extends VoidObject {
       return;
     }
 
-    const player = engine.getPlayer();
+    const player = engine.player;
     const playerIndex = engine.getIndex(player.id);
 
     if (playerIndex === undefined) {
@@ -960,11 +1030,9 @@ export class KillerManager extends VoidObject {
       return;
     }
 
-    for (const entity of engine.entities.flat()) {
-      if (entity.entity.name === "killer") {
-        engine.kill(entity);
-      }
-    }
+    engine.getEntities({ name: "killer" }).forEach(entity => {
+      engine.kill(entity);
+    });
 
     this.activated = true;
   }
@@ -1001,22 +1069,14 @@ export class WatcherManager extends VoidObject {
   }
 
   onTurn(self: RegisteredEntity<Entity>, { engine }: TurnEvent): void {
-    let numberOfWatchers = 0;
-
-    for (const entities of engine.entities) {
-      for (const entity of entities) {
-        if (entity.entity.name === "watcher") {
-          numberOfWatchers += 1;
-        }
-      }
-    }
+    let numberOfWatchers = engine.getEntities({ name: "watcher" }).length;
 
     if (numberOfWatchers === 0) {
       this.numberOfVoids = 0;
       return;
     }
 
-    const player = engine.getPlayer();
+    const player = engine.player;
 
     if (player.entity.voidRodUsed) {
       this.numberOfVoids += 1;
@@ -1053,17 +1113,15 @@ export class StairsManager extends VoidObject {
   }
 
   check(engine: Engine) {
-    const player = engine.getPlayer();
+    const player = engine.player;
 
     if (player.entity.stock.some(tile => tile.name === "switch")) {
       this._closed = true;
       return;
     }
 
-    this._closed = !engine.tiles
-      .map((tile, index) => ({ tile, index }))
-      .filter(({ tile }) => tile.name === "switch")
-      .every(({ index }) => engine.getEntitiesAt(index).length > 0);
+    this._closed = !engine.getTiles({ name: "switch" })
+      .every(({ index }) => engine.entities[index].length > 0);
 
     if (this._closed) {
       return;
@@ -1088,13 +1146,11 @@ export class CopyManager extends VoidObject {
   }
 
   onTurn(self: RegisteredEntity<Entity>, { engine }: TurnEvent): void {
-    engine.tiles
-      .map((tile, index) => ({ tile, index }))
-      .filter((element): element is { tile: CopyTile, index: number } => element.tile.name === "copy")
+    engine.getTiles<CopyTile>({ name: "copy" })
       .forEach(({ tile, index }) => {
         if (tile.entered && engine.entities[index].length === 0) {
           if (tile.lastLeft === null) {
-            engine.spawn(new Shade(engine.getPlayer()), index);
+            engine.spawn(new Shade(engine.player), index);
           } else {
             engine.spawn(new Shade(tile.lastLeft), index);
           }
@@ -1117,7 +1173,15 @@ export class EngineElements {
   private _entityIdToIndex: Map<number, number>;
   private _player: RegisteredEntity<VoidPlayer>;
 
-  constructor({ engine, tiles, entities, managers }: { engine: Engine, tiles: Tile[], entities: RegisteredEntity[][], managers: RegisteredEntity[] }) {
+  private _tileNameToIndices: Map<string, number[]>;
+  private _entityNameToIds: Map<string, RegisteredEntity[]>;
+
+  constructor({ engine, tiles, entities, managers }: { 
+    engine: Engine, 
+    tiles: Tile[], 
+    entities: RegisteredEntity[][], 
+    managers: RegisteredEntity[],
+  }) {
     this._engine = engine;
     this._tiles = tiles;
     this._entities = entities;
@@ -1126,12 +1190,34 @@ export class EngineElements {
       (entities, index) => entities.map(entity => [entity.id, index])
     ));
 
+    this._tileNameToIndices = new Map();
+    for (const [index, tile] of this._tiles.entries()) {
+      const indices = this._tileNameToIndices.get(tile.name);
+      if (indices !== undefined) {
+        indices.push(index);
+      } else {
+        this._tileNameToIndices.set(tile.name, [index]);
+      }
+    }
+
+    this._entityNameToIds = new Map();
+    for (const entities of this._entities) {
+      for (const entity of entities) {
+        const indices = this._entityNameToIds.get(entity.entity.name);
+        if (indices !== undefined) {
+          indices.push(entity);
+        } else {
+          this._entityNameToIds.set(entity.entity.name, [entity]);
+        }
+      }
+    }
+
     const players = entities.flat().filter(
       (entity): entity is RegisteredEntity<VoidPlayer> => 
         entity.entity.kind === "player"
     );
     
-    if (players.length != 1) {
+    if (players.length !== 1) {
       throw new Error("there must be one player entity");
     }
 
@@ -1147,7 +1233,15 @@ export class EngineElements {
     const registeredEntity = new RegisteredEntity(this._engine.generateId(), entity);
     this._entities[index].push(registeredEntity);
     this._entityIdToIndex.set(registeredEntity.id, index);
-    const newTile = this._engine.getTileAt(index);
+
+    const entityNames = this._entityNameToIds.get(entity.name);
+    if (entityNames !== undefined) {
+      entityNames.push(registeredEntity);
+    } else {
+      this._entityNameToIds.set(entity.name, [registeredEntity]);
+    }
+
+    const newTile = this._tiles[index];
     newTile.onEnter(index, { engine: this._engine, entity: registeredEntity });
     return registeredEntity;
   }
@@ -1175,6 +1269,11 @@ export class EngineElements {
     const tile = this._tiles[index];
     this._entityIdToIndex.delete(victim.id);
     this._entities[index] = this._entities[index].filter(e => e.id !== victim.id);
+    
+    this._entityNameToIds.set(victim.entity.name, 
+      (this._entityNameToIds.get(victim.entity.name) || [])
+        .filter(entity => entity.id !== victim.id)
+    );
 
     tile.onLeave(index, { engine: this._engine, entity: victim });
 
@@ -1189,6 +1288,19 @@ export class EngineElements {
     const oldTile = this._tiles[index];
     this._tiles[index] = newTile;
 
+    const tileNames = this._tileNameToIndices.get(newTile.name);
+    if (tileNames !== undefined) {
+      tileNames.push(index);
+    } else {
+      this._tileNameToIndices.set(newTile.name, [index]);
+    }
+
+    this._tileNameToIndices.set(oldTile.name, 
+      (this._tileNameToIndices.get(oldTile.name) || [])
+        .filter(tileIndex => index !== tileIndex)
+    );
+
+    
     for (const entity of this._entities[index]) {
       newTile.onEnter(index, { engine: this._engine, entity, transformed: true });
       oldTile.onLeave(index, { engine: this._engine, entity, transformed: true });
@@ -1199,6 +1311,17 @@ export class EngineElements {
 
   getIndex(id: number): number | undefined {
     return this._entityIdToIndex.get(id);
+  }
+
+  getTiles<T extends Tile>({ name }: { name: string }): { tile: T, index: number }[] {
+    return Array.from(this._tileNameToIndices.get(name) || []).map((index) => ({
+      index,
+      tile: this._tiles[index] as T
+    }));
+  }
+
+  getEntities<T extends Entity>({ name }: { name: string }): RegisteredEntity<T>[] {
+    return (this._entityNameToIds.get(name) || []) as RegisteredEntity<T>[];
   }
 }
 
@@ -1277,6 +1400,7 @@ export class Engine {
   get width(): number { return this._width; }
   get height(): number { return this._height; }
   get maxIndex(): number { return this._width * this._height; }
+  get player(): RegisteredEntity<VoidPlayer> { return this._elements.player; }
   get tiles() { return this._elements.tiles; }
   get entities() { return this._elements.entities; }
   get managers() { return this._elements.managers; }
@@ -1319,9 +1443,6 @@ export class Engine {
       throw new Error("`start` not called");
     }
 
-    console.debug("Start of turn");
-    console.debug("Player choice: %s", choice);
-
     const sortedEntities = this._elements.entities
       .flat()
       .map(entity => entity.entity.turns.map(turn => ({ turn, entity })))
@@ -1344,32 +1465,33 @@ export class Engine {
 
       const { turn: currentTurn, entity } = entityAndTurn;
       
-      console.debug("Start of turn %s", currentTurn);
-      
       this._forces = [];
       this._moves = [];
 
+      const oldIndices: [RegisteredEntity, number | undefined][] = [];
+      
+
+      oldIndices.push([entity, this.getIndex(entity.id)]);
       entity.entity.onTurn(entity, { engine: this, playerChoice: choice, turn: currentTurn });
       while (sortedEntities.length > 0 && sortedEntities[0].turn === currentTurn) {
         const { entity } = sortedEntities.shift()!;
+        oldIndices.push([entity, this.getIndex(entity.id)]);
         entity.entity.onTurn(entity, { engine: this, playerChoice: choice, turn: currentTurn });
       }
 
-      this._resolveTurn();
-
-      console.debug("End of turn %s %s", currentTurn, this._stop);
+      if (!this.cancelTurn) {
+        this._resolveTurn(oldIndices);
+      }
     }
     
     if (!this.cancelTurn) {
       this._numberOfTurns += 1;
     }
 
-    console.debug("End of turn");
-
     return this._stop;
   }
 
-  private _resolveTurn() {
+  private _resolveTurn(oldIndices: [RegisteredEntity, number | undefined][]) {
   
     for (const { entity, index } of this._moves) {
       this._elements.moveEntity(entity, index);
@@ -1420,14 +1542,14 @@ export class Engine {
 
       const newIndex = this.getPositionToIndex({ row, col });
 
-      const entities = this.getEntitiesAt(newIndex);
+      const entities = this.entities[newIndex];
 
       if (entities.some(entity => entity.entity.isObstacle)) {
         // blocked by obstacle entity
         continue;
       }
 
-      const tile = this.getTileAt(newIndex);
+      const tile = this.tiles[newIndex];
 
       if (tile.isObstacle) {
         return;
@@ -1440,6 +1562,12 @@ export class Engine {
     for (const entities of this._elements.entities) {
       if (entities.length >= 2) {
         entities.forEach(entity => entity.entity.onCollision(entity, { engine: this, entities }));
+      }
+    }
+
+    for (const [entity, index] of oldIndices) {
+      if (index !== undefined && this.getIndex(entity.id) === index) {
+        this._elements.tiles[index].onStay(index, { engine: this, entity });
       }
     }
   }
@@ -1480,13 +1608,13 @@ export class Engine {
       break;
     }
 
-    const tile = this.getTileAt(newIndex);
+    const tile = this.tiles[newIndex];
 
     if (tile.isObstacle) {
       return;
     }
 
-    const entities = this.getEntitiesAt(newIndex);
+    const entities = this.entities[newIndex];
 
     if (entities.length > 0) {
       this._forces.push(...entities.map(entity => ({ entity, direction })));
@@ -1515,18 +1643,6 @@ export class Engine {
     this._stop = true;
   }
 
-  getPlayer() {
-    return this._elements.player;
-  }
-
-  getTileAt(index: number) {
-    return this._elements.tiles[index];
-  }
-
-  getEntitiesAt(index: number) {
-    return this._elements.entities[index];
-  }
-
   getIndex(id: number) {
     return this._elements.getIndex(id);
   }
@@ -1540,6 +1656,14 @@ export class Engine {
 
   getPositionToIndex({ row, col }: { row: number, col: number }) {
     return row * this._width + col;
+  }
+
+  getTiles<T extends Tile>(params: { name: string }): { tile: T, index: number }[] {
+    return this._elements.getTiles<T>(params);
+  }
+
+  getEntities<T extends Entity>(params: { name: string }): RegisteredEntity<T>[] {
+    return this._elements.getEntities<T>(params);
   }
 }
 

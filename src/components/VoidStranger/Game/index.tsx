@@ -45,6 +45,10 @@ import {
   Watcher,
   CopyManager,
   CopyTile,
+  VoidRodTile,
+  VoidSwordTile,
+  WhiteTile,
+  VoidWingsTile,
 } from "./engine";
 
 import floorRemovedImg from "../../../assets/tiles/floor-removed.png";
@@ -57,6 +61,11 @@ import bombImg from "../../../assets/tiles/bomb.png";
 import exploImg from "../../../assets/tiles/explo.png";
 import switchImg from "../../../assets/tiles/switch.png";
 import copyImg from "../../../assets/tiles/copy.png";
+import whiteImg from "../../../assets/tiles/white.png";
+import voidRodImg from "../../../assets/tiles/void-rod.png";
+import voidSwordImg from "../../../assets/tiles/void-sword.png";
+import voidWingsImg from "../../../assets/tiles/void-wings.png";
+import voidWingsUsedImg from "../../../assets/tiles/void-wings-used.png";
 
 import boulderImg from "../../../assets/tiles/boulder.png";
 import leechLeftImg from "../../../assets/tiles/leech-left.png";
@@ -115,6 +124,10 @@ const TILES_MAPPING = new Map<string, { invoke: () => Tile, keywords: string, na
   ["Be", { invoke: () => new ExploTile(), keywords: "bomb explo", name: "Explo" }],
   ["S", { invoke: () => new SwitchTile(), keywords: "switch button", name: "Switch" }],
   ["C", { invoke: () => new CopyTile(), keywords: "copy shade", name: "Copy" }],
+  ["Wh", { invoke: () => new WhiteTile(), keywords: "blank white", name: "White"}],
+  ["Vr", { invoke: () => new VoidRodTile(), keywords: "void rod", name: "Rod"}],
+  ["Vs", { invoke: () => new VoidSwordTile(), keywords: "void sword", name: "Sword"}],
+  ["Vw", { invoke: () => new VoidWingsTile(), keywords: "void wings", name: "Wings"}],
 ]);
 
 const ENTITIES_MAPPING = new Map<string, { invoke: () => Entity | null, keywords: string, name: string }>([
@@ -150,7 +163,7 @@ function* chunk<T>(array: T[], size: number): IterableIterator<T[]> {
   }
 }
 
-function getBackgroundTile(tile: Tile, context?: { row: number, col: number, tiles: Tile[], engine?: Engine }): JSX.CSSProperties {
+function getBackgroundTile(tile: Tile, context?: { row: number, col: number, tiles: Tile[], wingsCount: number, engine?: Engine }): JSX.CSSProperties {
   switch (tile.name) {
   case "wall":
     return { "background-color": "#333" };
@@ -227,6 +240,37 @@ function getBackgroundTile(tile: Tile, context?: { row: number, col: number, til
     return {
       "background-image": "url(" + copyImg + ")",
     };
+  case "white":
+    return {
+      "background-image": "url(" + whiteImg + ")",
+    };
+  case "rod":
+    return {
+      "background-image": "url(" + voidRodImg + ")" + ", " + "url(" + whiteImg + ")",
+    };
+  case "sword":
+    return {
+      "background-image": "url(" + voidSwordImg + ")" + ", " + "url(" + whiteImg + ")",
+    };
+  case "wings":{
+    if (context === undefined) {
+      return {
+        "background-image": "url(" + voidWingsImg + ")" + ", " + "url(" + whiteImg + ")",
+      };
+    }
+
+    const wingsUsed = context.engine?.player.entity.wingsUsed;
+
+    if (wingsUsed !== undefined && wingsUsed > context.wingsCount) {
+      return {
+        "background-image": "url(" + voidWingsUsedImg + ")" + ", " + "url(" + whiteImg + ")",
+      };
+    }
+
+    return {
+      "background-image": "url(" + voidWingsImg + ")" + ", " + "url(" + whiteImg + ")",
+    };
+  }
   default:
     return {};
   }
@@ -461,8 +505,18 @@ function createEngine(entities: string[], tiles: string[]) {
 
 export const VoidStrangerGame: Component = () => {
   
-  const [tiles, setTiles] = createSignal<string[]>(Array.from({ length: 14 * 8 }, () => "."));
-  const [entities, setEntities] = createSignal<string[]>(Array.from({ length: 14 * 8,  }, (_, k) => k === 43 ? "P" : "."));
+  const [tiles, setTiles] = createSignal<string[]>((
+    ".,.,.,.,.,.,.,.,.,.,.,.,.,.," +
+    ".,.,.,.,.,.,.,.,.,.,.,.,.,.," +
+    ".,.,.,.,.,.,.,.,.,.,.,.,.,.," +
+    ".,.,.,.,.,.,.,.,.,.,.,.,.,.," +
+    ".,.,.,.,.,.,.,.,.,.,.,.,.,.," +
+    ".,.,.,.,.,.,.,.,.,.,.,.,.,.," +
+    ".,.,.,.,.,.,.,.,.,.,.,.,.,.," +
+    ".,.,.,.,.,.,.,.,.,.,.,.,.,.," +
+    "Wh,Wh,Wh,Wh,Wh,Wh,Vr,Wh,Wh,Vw,Vs,Wh,Wh,Wh"
+  ).split(","));
+  const [entities, setEntities] = createSignal<string[]>(Array.from({ length: 14 * 9,  }, (_, k) => k === 43 ? "P" : "."));
   const [editorMode, setEditorMode] = createSignal<boolean>(true);
 
   
@@ -601,7 +655,16 @@ export const VoidStrangerPlay: Component<{ entities: string[], tiles: string[], 
                       "background-position-x": "center",
                       "background-repeat": "no-repeat",
                       "background-size": "contain",
-                      ...getBackgroundTile(tile, { row: row(), col: col(), tiles: engine.tiles, engine }),
+                      ...getBackgroundTile(tile, { 
+                        row: row(), 
+                        col: col(), 
+                        tiles: engine.tiles, 
+                        engine,
+                        wingsCount:tiles()
+                          .filter((_, index) => index < (row() * WIDTH) + col())
+                          .filter((tile) => tile.name === "wings")
+                          .length
+                      }),
                     }}
                   >
                     <div
@@ -866,7 +929,15 @@ const EditorTile: Component<{ tile: Tile, entity: Entity | null, selectedKey: { 
       draggable={false}
       class="void-stranger tile-layer"
       style={{
-        ...getBackgroundTile(props.tile, { row: props.row, col: props.col, tiles: props.tiles }),
+        ...getBackgroundTile(props.tile, { 
+          row: props.row, 
+          col: props.col, 
+          tiles: props.tiles, 
+          wingsCount: props.tiles
+            .filter((_, index) => index < (props.row * WIDTH) + props.col)
+            .filter((tile) => tile.name === "wings")
+            .length
+        }),
       }}
     >
       <div  
