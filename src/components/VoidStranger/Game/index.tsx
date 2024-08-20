@@ -245,13 +245,29 @@ function getBackgroundTile(tile: Tile, context?: { row: number, col: number, til
       "background-image": "url(" + whiteImg + ")",
     };
   case "rod":
-    return {
-      "background-image": "url(" + voidRodImg + ")" + ", " + "url(" + whiteImg + ")",
-    };
+    if (context?.engine?.player.entity.voidRodUsed) {
+      return {
+        "background-image": "url(" + voidRodImg + ")" + ", " + "url(" + whiteImg + ")",
+        "z-index": 2,
+        "outline": "5px solid black",
+      };
+    } else {
+      return {
+        "background-image": "url(" + voidRodImg + ")" + ", " + "url(" + whiteImg + ")",
+      };
+    }
   case "sword":
-    return {
-      "background-image": "url(" + voidSwordImg + ")" + ", " + "url(" + whiteImg + ")",
-    };
+    if (context?.engine?.player.entity.voidSwordUsed) {
+      return {
+        "background-image": "url(" + voidSwordImg + ")" + ", " + "url(" + whiteImg + ")",
+        "z-index": 2,
+        "outline": "5px solid black",
+      };
+    } else {
+      return {
+        "background-image": "url(" + voidSwordImg + ")" + ", " + "url(" + whiteImg + ")",
+      };
+    }
   case "wings":{
     if (context === undefined) {
       return {

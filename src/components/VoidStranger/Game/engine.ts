@@ -842,6 +842,7 @@ export class VoidPlayer extends AbstractEntity {
 
   onTurn(self: RegisteredEntity, { engine, playerChoice }: TurnEvent) {
     this.voidRodUsed = false;
+    this.voidSwordUsed = false;
 
     const index = engine.getIndex(self.id);
 
@@ -875,7 +876,11 @@ export class VoidPlayer extends AbstractEntity {
       
       if (entities.length > 0) {
         if (this.hasVoidSword(engine)) {
-          const enemies = entities.filter(entity => entity.entity.kind === "enemy");
+          const enemies = entities.filter(entity => 
+            entity.entity.kind === "enemy" && 
+              entity.entity.name !== "shade" && 
+              !entity.entity.name.startsWith("mimic")
+          );
           if (enemies.length > 0) {
             this.voidSwordUsed = true;
             enemies.forEach(enemy => engine.kill(enemy, self));
