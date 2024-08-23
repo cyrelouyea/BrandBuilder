@@ -1,4 +1,57 @@
-# Brand Builder
+# Void Stranger Components
+
+## Level editor
+
+Build your own Void Stranger level!
+
+Mechanics supported:
+- Tiles:
+  - [x] Rod
+  - [ ] Memory
+  - [x] Sword
+  - [x] Wings
+  - [ ] Endless rod
+  - [x] Normal
+  - [x] Stairs
+  - [x] Empty
+  - [x] Glass
+  - [x] Bomb / Explo
+  - [x] Switch / Locked Stairs
+  - [x] Copy
+  - [ ] Death 
+- Statues:
+  - [x] Boulder
+  - [ ] Voider
+  - [x] Lover
+  - [ ] Smiler
+  - [x] Greeder
+  - [x] Killer
+  - [x] Slower
+  - [x] Watcher
+  - [ ] Atoner
+- Enemies:
+  - [x] Leech
+  - [x] Maggot
+  - [x] Smile
+  - [x] Beaver
+  - [x] Lazy Eye
+  - [x] Mimic
+  - [ ] Octahedron
+  - [x] Shade
+ 
+To do:
+- [ ] Different texture for the same type of tile
+- [ ] Export/Import level as file
+- [ ] Multiple levels / Branes
+- [ ] Chests / Locusts
+- [ ] Dialogue
+- [ ] Music
+- [ ] Touchscreen/Mobile support
+
+Nice to have:
+- [ ] Custom width and height
+
+## Brand Builder
 
 Build your own brand
 
@@ -9,7 +62,7 @@ Only characters from A to Z (lowercase or uppercase) will be included.
 
 For example:
 ```
-https://brandbuilder.aleryc.fr/?q=onlyamemoryremains
+https://vs.aleryc.fr/brand-builder/?q=onlyamemoryremains
 ```
 
 
@@ -18,10 +71,10 @@ You can also put any non-alphabetical characters between letters to add an empty
 Example!
 
 ```
-https://brandbuilder.aleryc.fr/?q=o.n..l.yam...emo....ryr...ema.i..n.s
+https://vs.aleryc.fr/brand-builder/?q=o.n..l.yam...emo....ryr...ema.i..n.s
 ```
 
-In the page, you can drag and drop the tiles to customize your brand. 
+You can drag and drop the tiles to customize your brand. 
 The app will prevent you from reordering the tiles and break your sentence.
 
 Reordering the tiles will automatically update the URL! You only need to copy to share it!
