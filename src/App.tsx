@@ -8,9 +8,9 @@ import { VoidStrangerGame } from "./components/VoidStranger/Game";
 const App: Component = () => {
 
   return <Router >
-    <Route path="/" component={BrandBuilder} />
+    <Route path="/bb" component={BrandBuilder} />
     <Route path="/game" component={VoidStrangerGame} />
-    <Route path="*" component={() => <Navigate href="/" />} />
+    <Route path="*" component={() => <Navigate href="/bb" />} />
   </Router>;
 };
 
