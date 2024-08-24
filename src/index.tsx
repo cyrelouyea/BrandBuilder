@@ -2,7 +2,7 @@
 import { render } from "solid-js/web";
 import { plausible } from "./plausible";
 
-import "./indeex.css";
+import "./index.css";
 import App from "./App";
 
 // Add tracking with plausible
