@@ -163,6 +163,7 @@ export const BrandBuilder: Component = () => {
       resizeObserver.observe(brandRef);
     }
     
+    plausible.trackPageview();
     plausible.trackEvent("brand", { props: { pattern: params.q ?? "" }});
   });
 

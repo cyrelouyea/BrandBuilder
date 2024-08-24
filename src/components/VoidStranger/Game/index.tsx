@@ -110,6 +110,7 @@ import watcherEyesImg from "../../../assets/tiles/watcher-eyes.png";
 
 
 import "./index.css";
+import { plausible } from "../../../plausible";
 
 const WIDTH = 14;
 
@@ -535,7 +536,10 @@ export const VoidStrangerGame: Component = () => {
   const [entities, setEntities] = createSignal<string[]>(Array.from({ length: 14 * 9,  }, (_, k) => k === 43 ? "P" : "."));
   const [editorMode, setEditorMode] = createSignal<boolean>(true);
 
-  
+  onMount(() => {
+    plausible.trackPageview();
+  });
+
   return (
     <Switch>
       <Match when={editorMode()}>

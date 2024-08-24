@@ -1,12 +1,8 @@
 /* @refresh reload */
 import { render } from "solid-js/web";
-import { plausible } from "./plausible";
 
 import "./index.css";
 import App from "./App";
-
-// Add tracking with plausible
-plausible.enableAutoPageviews();
 
 const root = document.getElementById("root");
 
