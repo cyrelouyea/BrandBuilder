@@ -1,9 +1,10 @@
 import { DragDropProvider, DragDropSensors, DragEventHandler, DragOverlay, closestCenter, createDraggable, createDroppable } from "@thisbeyond/solid-dnd";
-import { Component, Match, Show, createSignal, Switch, onCleanup, onMount, Index, For } from "solid-js";
+import { Component, Match, Show, createSignal, Switch, onCleanup, onMount, Index, For, createEffect } from "solid-js";
 import { Letter } from "../Letter";
 import { chunks, fromVoidStrangerLetter, isOrdered, toVoidStrangerLetter } from "../../../utils";
 import { useSearchParams } from "@solidjs/router";
 import { BRANDS } from "../../brands";
+import { plausible } from "../../../plausible";
 
 // Asset files
 import emptyBrandImg from "../../../assets/emptybrand.png";
@@ -97,6 +98,7 @@ export const BrandBuilder: Component = () => {
   const [pixelScale, setPixelScale] = createSignal<number>(0);
   const [pixelOffset, setPixelOffset] = createSignal<{ left:number, top: number }>({ left: 0, top: 0});
 
+
   const blocks = () => {
     const bl: BlockProps[] = (params.q ?? "")
       .split("")
@@ -133,7 +135,9 @@ export const BrandBuilder: Component = () => {
         copy[toIndex] = temp;
 
         if (isOrdered(copy.filter((block) => block.type === "letter").map(block => block.id))) {
-          setParams({ q: copy.map(block => block.type === "empty" ? "." : (fromVoidStrangerLetter(block.value)) || ".").join("") });
+          const newPattern = copy.map(block => block.type === "empty" ? "." : (fromVoidStrangerLetter(block.value)) || ".").join("");
+          setParams({ q: newPattern });
+          plausible.trackEvent("brand", { props: { pattern: newPattern }});
         }
       }
     }
@@ -158,6 +162,8 @@ export const BrandBuilder: Component = () => {
       resize(brandRef);
       resizeObserver.observe(brandRef);
     }
+    
+    plausible.trackEvent("brand", { props: { pattern: params.q ?? "" }});
   });
 
   onCleanup(() => {
